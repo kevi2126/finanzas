@@ -10,7 +10,7 @@ self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
-// Red primero (para recibir actualizaciones), cach?? si no hay conexi??n.
+// Red primero (para recibir actualizaciones), cache si no hay conexion.
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   e.respondWith(
