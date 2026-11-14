@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Finanzas">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<title>Mis Finanzas Ruta</title>
+<style>
+:root{
+  --bg:#0d1117; --card:#161b22; --card2:#1f2630; --line:#2b3340;
+  --t1:#f0efec; --t2:#c3c2b7; --t3:#8b8a83;
+  --inc:#3987e5; --exp:#d95926;
+  --good:#0ca30c; --warn:#fab219; --bad:#d03b3b;
+  --r:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--t1);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+body{padding:env(safe-area-inset-top) 0 calc(72px + env(safe-area-inset-bottom))}
+header{padding:14px 16px 4px;display:flex;justify-content:space-between;align-items:center}
+header h1{font-size:20px;margin:0}
+header small{color:var(--t3)}
+#hdrRight{display:flex;gap:6px;align-items:center}
+#syncBadge{font-size:12px;color:var(--t3);background:none;border:0;padding:4px}
+main{padding:8px 12px 20px;max-width:640px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin:10px 0}
+.card h2{font-size:15px;margin:0 0 10px;color:var(--t2);font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.big{font-size:28px;font-weight:700;letter-spacing:-.5px}
+.muted{color:var(--t3);font-size:13px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row .l{min-width:0;flex:1}
+.row .l>div:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{background:var(--card2);border-radius:12px;padding:10px}
+.tile .v{font-size:19px;font-weight:700}
+.tile .k{font-size:12px;color:var(--t3)}
+.pos{color:#5fd35f}.neg{color:#ff7b7b}
+.pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.pill.good{background:rgba(12,163,12,.18);color:#5fd35f;border:1px solid var(--good)}
+.pill.warn{background:rgba(250,178,25,.15);color:var(--warn);border:1px solid var(--warn)}
+.pill.bad{background:rgba(208,59,59,.18);color:#ff7b7b;border:1px solid var(--bad)}
+.banner{border-radius:var(--r);padding:14px;margin:10px 0;border:1px solid}
+.banner.good{background:rgba(12,163,12,.12);border-color:var(--good)}
+.banner.warn{background:rgba(250,178,25,.10);border-color:var(--warn)}
+.banner.bad{background:rgba(208,59,59,.14);border-color:var(--bad)}
+.banner b{font-size:16px}
+.bar{height:8px;background:var(--card2);border-radius:99px;overflow:hidden;margin-top:6px}
+.bar>i{display:block;height:100%;border-radius:99px;background:var(--inc)}
+nav{position:fixed;left:0;right:0;bottom:0;background:#0b0f15;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:5}
+nav button{flex:1;background:none;border:0;color:var(--t3);padding:8px 0 10px;font-size:10.5px;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
+nav button span{font-size:20px;line-height:1}
+nav button.on{color:var(--t1)}
+nav button.add span{background:var(--good);color:#fff;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-top:-4px}
+label{display:block;font-size:13px;color:var(--t2);margin:10px 0 4px}
+input,select,textarea{width:100%;background:var(--card2);color:var(--t1);border:1px solid var(--line);border-radius:10px;padding:11px;font-size:16px;font-family:inherit}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--inc);border-color:transparent}
+.btn{display:inline-block;background:var(--card2);color:var(--t1);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:15px;font-weight:600;cursor:pointer;text-align:center}
+.btn.primary{background:var(--good);border-color:var(--good);color:#fff}
+.btn.blue{background:var(--inc);border-color:var(--inc);color:#fff}
+.btn.danger{background:transparent;border-color:var(--bad);color:#ff7b7b}
+.btn.sm{padding:6px 10px;font-size:13px}
+.btn.full{width:100%;margin-top:14px}
+.seg{display:flex;background:var(--card2);border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;background:none;color:var(--t2);padding:9px 4px;border-radius:9px;font-weight:600;font-size:13.5px}
+.seg button.on{background:var(--card);color:var(--t1);box-shadow:0 1px 0 var(--line)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{border:1px solid var(--line);background:var(--card2);color:var(--t2);border-radius:999px;padding:7px 12px;font-size:13px}
+.chips button.on{background:var(--exp);border-color:var(--exp);color:#fff}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--t2);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.tip{position:fixed;background:#000;border:1px solid var(--line);color:var(--t1);padding:6px 9px;border-radius:8px;font-size:12px;pointer-events:none;z-index:20;display:none}
+dialog{background:var(--card);color:var(--t1);border:1px solid var(--line);border-radius:18px;width:min(92vw,460px);padding:16px;max-height:88vh;overflow:auto}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));background:#222a35;border:1px solid var(--line);padding:10px 16px;border-radius:12px;z-index:30;display:none;font-size:14px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:7px 4px;text-align:right;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--t3);font-weight:600}
+tr.paid td{color:var(--t3)}
+tr.next td{background:rgba(57,135,229,.12)}
+tr.late td{background:rgba(208,59,59,.15)}
+.check{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:14px;color:var(--t2)}
+.check input{width:20px;height:20px;flex:none}
+.hint{font-size:12px;color:var(--t3);margin-top:4px}
+.qbtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+code{background:var(--card2);padding:1px 5px;border-radius:5px;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <div><h1 id="title">Inicio</h1><small id="subtitle"></small></div>
+  <div id="hdrRight"><button id="syncBadge" data-act="syncNow"></button><span id="hdrPill"></span></div>
+</header>
+<main id="view"></main>
+<nav id="nav">
+  <button data-tab="inicio" class="on"><span>🏠</span>Inicio</button>
+  <button data-tab="movs"><span>📒</span>Movs</button>
+  <button data-tab="deudas"><span>💳</span>Deudas</button>
+  <button data-tab="nuevo" class="add"><span>+</span>Registrar</button>
+  <button data-tab="auto"><span>🚗</span>Auto</button>
+  <button data-tab="apartados"><span>🐷</span>Apartados</button>
+</nav>
+<div class="tip" id="tip"></div>
+<div class="toast" id="toast"></div>
+<dialog id="dlg"><div id="dlgBody"></div></dialog>
+
+<script src="schedule.js"></script>
+<script>
+/* ================== DATOS ================== */
+const KEY='finanzas_ruta_v1', SKEY='finanzas_ruta_sync';
+const SOBRES={
+  auto:{n:'Mensualidad auto',e:'🚗'},
+  fijos:{n:'TDC y pagos fijos',e:'💳'},
+  mant:{n:'Mantenimiento',e:'🔧'},
+  imp:{n:'Impuestos (SAT)',e:'🧾'},
+  emerg:{n:'Fondo de emergencia',e:'🛟'},
+  capital:{n:'Abono extra (deudas/auto)',e:'📉'}
+};
+const GASTO_CATS={
+  gasolina:'⛽ Gasolina', mant:'🔧 Mantenimiento', comida:'🍔 Comida', auto:'🚗 Mensualidad auto',
+  seguro:'🛡️ Seguro', servicios:'📱 Servicios/Celular', casa:'🏠 Casa', personal:'🛍️ Personal/Varios',
+  intereses:'💸 Intereses/comisiones', otro:'📦 Otro'
+};
+const DIARIOS=['gasolina','comida','personal','otro','casa'];
+const ARR=['entries','moves','prepay','bills','debts'];   // colecciones con id (se sincronizan por registro)
+const MAPS=['carPaid','billPaid','weekReal'];
+const seedDebts=[['bbva','BBVA Azul'],['rappi','RappiCard'],['nu','Nu'],['klar','Klar'],['stori','Stori'],['ml','Mercado Libre']]
+  .map(([id,n])=>({id:'tdc-'+id,name:n,type:'tdc',saldo:0,limite:0,tasa:0,pagoMin:0,pagoNoInt:0,day:0}));
+const DEFAULTS={
+  settings:{ivaPct:16,retIvaPct:0,retIsrPct:0,weekStart:1,maintPct:8,maintGoal:10000,taxPct:0,
+            emergPct:10,emergMonths:3,emergMin:5000,abonoPct:50,remindDays:5,strategy:'avalancha',segCancelFrom:0},
+  entries:[],   // {id,date,type:'ruta'|'extra'|'gasto'|'pago',cat,amount,km,paq,lts,note,from,card,debt}
+  moves:[],     // {id,date,sobre,amount,note,ref}
+  carPaid:{}, prepay:[], bills:[], billPaid:{}, weekReal:{},
+  debts:seedDebts,
+  meta:{}, del:{}  // marcas de tiempo para sincronizar sin perder datos
+};
+function normalize(s){
+  const o=Object.assign(structuredClone(DEFAULTS),s||{});
+  o.settings=Object.assign({},DEFAULTS.settings,(s||{}).settings);
+  ARR.forEach(k=>{if(!Array.isArray(o[k]))o[k]=[]});MAPS.concat(['meta','del']).forEach(k=>{if(!o[k]||typeof o[k]!=='object')o[k]={}});
+  return o;
+}
+const seedBills=[{id:'tel-principal',name:'Teléfono principal',type:'fijo',day:15,amount:135,freq:'q',desde:''},
+  {id:'tel-trabajo',name:'Teléfono trabajo',type:'fijo',day:15,amount:230,freq:'m',desde:''}];
+function load(){let s=null;try{s=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+  const o=normalize(s);
+  if(!o.seedTel){seedBills.forEach(b=>{if(!o.bills.some(x=>x.id===b.id)&&!o.del['bills:'+b.id])o.bills.push({...b})});o.seedTel=true}
+  return o}
+let S=load();
+function save(){localStorage.setItem(KEY,JSON.stringify(S));scheduleSync()}
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const now=()=>Date.now();
+// --- mutaciones con marca de tiempo ---
+function add(c,r){S[c].push(r);S.meta[c+':'+r.id]=now();return r}
+function upd(c,r){S.meta[c+':'+r.id]=now()}
+function rem(c,id){S[c]=S[c].filter(x=>x.id!==id);S.del[c+':'+id]=now()}
+function mset(m,k,v){S[m][k]=v;S.meta[m+':'+k]=now()}
+function mdel(m,k){delete S[m][k];S.del[m+':'+k]=now()}
+// --- fusión de dos copias (iPhone + Android) ---
+function merge(a,b){
+  a=normalize(a);b=normalize(b);
+  const mx=(x,y)=>{const o={...x};for(const k in y)o[k]=Math.max(o[k]||0,y[k]);return o};
+  const out=normalize(null);out.meta=mx(a.meta,b.meta);out.del=mx(a.del,b.del);
+  const alive=k=>!(out.del[k]&&out.del[k]>=(out.meta[k]||0));
+  ARR.forEach(c=>{const m=new Map();[a,b].forEach(src=>src[c].forEach(r=>{const t=src.meta[c+':'+r.id]||0,cur=m.get(r.id);if(!cur||t>cur.t)m.set(r.id,{r,t})}));
+    out[c]=[...m.values()].filter(x=>alive(c+':'+x.r.id)).map(x=>x.r)});
+  MAPS.forEach(c=>{const o={};const keys=new Set([...Object.keys(a[c]),...Object.keys(b[c])]);
+    keys.forEach(k=>{const ta=k in a[c]?(a.meta[c+':'+k]||0):-1,tb=k in b[c]?(b.meta[c+':'+k]||0):-1;const v=ta>=tb?a[c][k]:b[c][k];if(alive(c+':'+k))o[k]=v});out[c]=o});
+  out.settings=(a.meta.settings||0)>=(b.meta.settings||0)?a.settings:b.settings;
+  return out;
+}
+
+/* ================== UTILIDADES ================== */
+const fmt=n=>(n<-0.004?'-':'')+'$'+Math.abs(n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmt0=n=>(n<-0.5?'-':'')+'$'+Math.round(Math.abs(n||0)).toLocaleString('es-MX');
+const pad=n=>String(n).padStart(2,'0');
+const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const pd=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d||1)};
+const today=()=>iso(new Date());
+const addDays=(s,n)=>{const d=pd(s);d.setDate(d.getDate()+n);return iso(d)};
+const daysBetween=(a,b)=>Math.round((pd(b)-pd(a))/864e5);
+const ym=s=>s.slice(0,7);
+const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const fdate=s=>{const d=pd(s);return `${d.getDate()} ${MESES[d.getMonth()]} ${d.getFullYear()}`};
+const fdateS=s=>{const d=pd(s);return `${['dom','lun','mar','mié','jue','vie','sáb'][d.getDay()]} ${d.getDate()} ${MESES[d.getMonth()]}`};
+const fmonth=s=>{const[y,m]=s.split('-').map(Number);return `${MESES[m-1]} ${y}`};
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sum=(a,f=x=>x)=>a.reduce((s,x)=>s+(+f(x)||0),0);
+function weekKey(s){const d=pd(s);const diff=(d.getDay()-S.settings.weekStart+7)%7;d.setDate(d.getDate()-diff);return iso(d)}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',2200)}
+const lvl=(v,g,w,hb=true)=>hb?(v>=g?'good':v>=w?'warn':'bad'):(v<=g?'good':v<=w?'warn':'bad');
+const LBL={good:'✅ Bien',warn:'⚠️ Atención',bad:'⛔ Mal'};
+const pill=(l,t)=>`<span class="pill ${l}">${t||LBL[l]}</span>`;
+const worst=(...ls)=>ls.includes('bad')?'bad':ls.includes('warn')?'warn':'good';
+
+/* ================== CÁLCULOS ================== */
+const payFactor=()=>1+(S.settings.ivaPct-S.settings.retIvaPct-S.settings.retIsrPct)/100;
+const entryValue=e=>e.type==='ruta'?e.amount*payFactor():e.amount;
+const sobreBal=k=>sum(S.moves.filter(m=>m.sobre===k),m=>m.amount);
+const isCashOut=e=>(e.type==='gasto'&&!e.card)||e.type==='pago';
+function weekData(wk){
+  const end=addDays(wk,6),es=S.entries.filter(e=>e.date>=wk&&e.date<=end),rutas=es.filter(e=>e.type==='ruta');
+  const sub=sum(rutas,e=>e.amount),iva=sub*S.settings.ivaPct/100,ret=sub*(S.settings.retIvaPct+S.settings.retIsrPct)/100,esperado=sub+iva-ret;
+  const real=S.weekReal[wk],ruta=real!=null&&real!==''?+real:esperado;
+  const extras=sum(es.filter(e=>e.type==='extra'),e=>e.amount);
+  return {wk,end,sub,iva,ret,esperado,real,ruta,extras,ingreso:ruta+extras,
+    gastos:sum(es.filter(e=>e.type==='gasto'),e=>e.amount),
+    salidas:sum(es.filter(isCashOut),e=>e.amount),
+    diarios:sum(es.filter(e=>e.type==='gasto'&&DIARIOS.includes(e.cat)&&!e.from&&!e.card),e=>e.amount),
+    km:sum(rutas,e=>e.km),dias:new Set(rutas.map(e=>e.date)).size};
+}
+function monthData(m){
+  const es=S.entries.filter(e=>ym(e.date)===m),g=es.filter(e=>e.type==='gasto');
+  const ing=sum(es.filter(e=>e.type==='ruta'||e.type==='extra'),entryValue);
+  const porCat={};g.forEach(e=>porCat[e.cat]=(porCat[e.cat]||0)+e.amount);
+  const gastos=sum(g,e=>e.amount),conTdc=sum(g.filter(e=>e.card),e=>e.amount),pagos=sum(es.filter(e=>e.type==='pago'),e=>e.amount);
+  const salidas=gastos-conTdc+pagos;
+  return {ing,gastos,conTdc,pagos,salidas,flujo:ing-salidas,gas:porCat.gasolina||0,rutaIng:sum(es.filter(e=>e.type==='ruta'),entryValue),porCat};
+}
+// ---- Auto y seguro ----
+const vehPart=p=>p[3]+p[4]+p[5];
+const segPart=p=>p[6]+p[7]+p[8];
+const segOn=p=>!(S.settings.segCancelFrom&&p[0]>=S.settings.segCancelFrom);
+const payAmt=p=>segOn(p)?p[2]:vehPart(p);
+const nextPay=()=>SCHEDULE.find(p=>!S.carPaid[p[0]]);
+function prevDue(p){const i=SCHEDULE.indexOf(p);return i>0?SCHEDULE[i-1][1]:addDays(p[1],-30)}
+const capitalRestante=()=>Math.max(0,sum(SCHEDULE.filter(p=>!S.carPaid[p[0]]),p=>p[3])-sum(S.prepay,x=>x.amount));
+function simular(B,V){const r=CAR_INFO.tasa/100/12;let n=0,int=0;while(B>0.01&&n<600){const i=B*r*1.16;int+=i;B-=Math.min(B,V-i);n++}return {meses:n,intereses:int}}
+// ---- Pagos fijos y deudas: fechas ----
+function startMonthFor(day){const d=new Date();return d.getDate()>day?iso(new Date(d.getFullYear(),d.getMonth()+1,1)).slice(0,7):today().slice(0,7)}
+function occ(it){
+  if(!it.day)return null;const t=today();let d=new Date();d=new Date(d.getFullYear(),d.getMonth(),1);
+  if(it.desde){const s=pd(it.desde+'-01');if(s>d)d=s}
+  for(let k=0;k<14;k++){const y=d.getFullYear(),mo=d.getMonth(),last=new Date(y,mo+1,0).getDate();
+    if(it.freq!=='a'||!it.desde||mo+1===+it.desde.slice(5,7)){
+      const days=it.freq==='q'?[[quinDays(it.day)[0],'a'],[Math.min(quinDays(it.day)[1],last),'b']]:[[Math.min(it.day,last),'']];
+      for(const [dd,suf] of days){const date=`${y}-${pad(mo+1)}-${pad(dd)}`,key=`${it.id}|${date.slice(0,7)}${suf?'-'+suf:''}`;
+        if(!(key in S.billPaid))return {date,days:daysBetween(t,date),key}}}
+    d=new Date(y,mo+1,1)}
+  return null;
+}
+const quinDays=day=>{const a=((+day-1)%15)+1;return [a,a+15]}; // quincenal: ej. 15 y 30, o 1 y 16
+const FREQ={m:'mensual',q:'quincenal',a:'anual'};
+const debtActive=d=>(+d.saldo||0)>0.5;
+const debtMin=d=>Math.min(+d.saldo||0,+d.pagoMin||0);
+function obligaciones(days=31){
+  return [...S.bills.map(b=>({kind:'bill',it:b,amount:+b.amount||0})),...S.debts.filter(debtActive).map(d=>({kind:'debt',it:d,amount:debtMin(d)}))]
+    .map(x=>({...x,o:occ(x.it)})).filter(x=>x.o&&x.o.days<=days).sort((a,b)=>a.o.days-b.o.days);
+}
+const billMensual=b=>(!b.desde||b.desde<=today().slice(0,7))?(b.freq==='a'?(+b.amount||0)/12:b.freq==='q'?(+b.amount||0)*2:(+b.amount||0)):0;
+// ---- Promedios ----
+function lastWeeks(n,cur=false){const out=[];let wk=weekKey(today());if(!cur)wk=addDays(wk,-7);for(let i=0;i<n;i++){out.push(weekData(wk));wk=addDays(wk,-7)}return out}
+function avgWeekIncome(){const w=lastWeeks(4).filter(x=>x.ingreso>0);return w.length?sum(w,x=>x.ingreso)/w.length:0}
+function avgWeekDiarios(){const w=lastWeeks(4).filter(x=>x.ingreso>0||x.diarios>0);return w.length?sum(w,x=>x.diarios)/w.length:0}
+function fijoMensual(){const np=nextPay();return (np?payAmt(np):0)+sum(S.bills,billMensual)+sum(S.debts.filter(debtActive),debtMin)+avgWeekDiarios()*4.33}
+
+/* ================== PLAN DE DEUDAS ================== */
+const rateOf=d=>(+d.tasa||0)>0?+d.tasa:(d.type==='tdc'?60:30);
+function ordenDeudas(list){
+  const l=list.slice();
+  if(S.settings.strategy==='bola')l.sort((a,b)=>a.saldo-b.saldo);else l.sort((a,b)=>rateOf(b)-rateOf(a)||a.saldo-b.saldo);
+  return l;
+}
+function debtPlan(){
+  const st=S.settings,inc=avgWeekIncome()*4.33,np=nextPay();
+  const car=np?payAmt(np):0,bills=sum(S.bills,billMensual),diarios=avgWeekDiarios()*4.33;
+  const sub=inc/payFactor(),mant=sobreBal('mant')<st.maintGoal?sub*st.maintPct/100:0,imp=sub*st.ivaPct/100*st.taxPct/100;
+  const emerg=sobreBal('emerg')<st.emergMin?inc*st.emergPct/100:0;
+  const budget=inc-car-bills-diarios-mant-imp-emerg;
+  const act=S.debts.filter(debtActive),mins=sum(act,debtMin);
+  let extra=Math.max(0,budget-mins);const orden=ordenDeudas(act);
+  const alloc={};orden.forEach(d=>{const m=debtMin(d),x=Math.min(extra,d.saldo-m);alloc[d.id]=m+x;extra-=x});
+  // simulación mes a mes
+  let bal=act.map(d=>({d,s:+d.saldo})),meses=0,intTot=0;const pay=Math.max(0,budget);
+  if(act.length&&pay>0){while(bal.some(x=>x.s>0.5)&&meses<360){bal.forEach(x=>{if(x.s>0){const i=x.s*rateOf(x.d)/100/12*1.16;x.s+=i;intTot+=i}});
+    let p=pay;bal.forEach(x=>{const m=Math.min(x.s,+x.d.pagoMin||0);x.s-=m;p-=m});
+    ordenDeudas(bal.filter(x=>x.s>0.5).map(x=>({...x.d,saldo:x.s,_x:x}))).forEach(o=>{const y=Math.min(Math.max(0,p),o._x.s);o._x.s-=y;p-=y});meses++}}
+  return {inc,car,bills,diarios,mant,imp,emerg,budget,mins,alloc,orden,meses,intTot,total:sum(act,d=>d.saldo),act,sobra:Math.max(0,budget-sum(Object.values(alloc)))};
+}
+
+/* ================== SALUD FINANCIERA ================== */
+function salud(){
+  const t=today(),md=monthData(ym(t)),out=[],np=nextPay();
+  if(np){const dd=daysBetween(t,np[1]),bal=sobreBal('auto'),amt=payAmt(np);
+    const avance=Math.min(1,Math.max(0.05,1-dd/Math.max(1,daysBetween(prevDue(np),np[1])))),need=amt*avance;
+    out.push({k:'Mensualidad del auto',l:dd<0?'bad':lvl(bal/need,1,0.7),d:dd<0?`¡Pago #${np[0]} vencido hace ${-dd} días! Hay 10% de penalización.`:`Llevas ${fmt0(bal)} de ${fmt0(amt)}. Para ir al día deberías tener ~${fmt0(need)} (faltan ${dd} días).`})}
+  if(md.ing>0){const tasa=md.flujo/md.ing*100;out.push({k:'Dinero que te queda del mes',l:lvl(tasa,20,5),d:`Te queda ${tasa.toFixed(0)}% de lo que ganaste (${fmt0(md.flujo)}) después de gastos y pagos a deudas. Meta: 20% o más.`})}
+  else out.push({k:'Dinero que te queda del mes',l:'warn',d:'Aún no registras ingresos este mes.'});
+  if(md.rutaIng>0){const g=md.gas/md.rutaIng*100;out.push({k:'Gasolina vs ganancia de ruta',l:lvl(g,25,35,false),d:`La gasolina se come ${g.toFixed(0)}% de tu ganancia de ruta. Ideal: menos de 25%.`})}
+  const comp=(np&&daysBetween(t,np[1])<=31?payAmt(np):0)+sum(obligaciones(31),x=>x.amount);
+  const tot=sum(Object.keys(SOBRES).filter(k=>k!=='capital'),sobreBal);
+  if(comp>0){const r=tot/comp;out.push({k:'Capital disponible',l:lvl(r,1.5,1),d:`Tienes ${fmt0(tot)} apartado contra ${fmt0(comp)} que debes pagar en 30 días (${(r*100).toFixed(0)}%).${r<1?' Capital bajo: no cubres tus compromisos.':''}`})}
+  const act=S.debts.filter(debtActive);
+  if(act.length){const inc=avgWeekIncome()*4.33||md.ing,mins=sum(act,debtMin),r=inc?mins/inc*100:100;
+    const lim=sum(act.filter(d=>d.limite>0),d=>d.limite),uso=lim?sum(act.filter(d=>d.limite>0),d=>d.saldo)/lim*100:0;
+    const venc=obligaciones(0).filter(x=>x.kind==='debt'&&x.o.days<0);
+    out.push({k:'Deudas (TDC y préstamos)',l:worst(lvl(r,15,30,false),lim?lvl(uso,30,70,false):'good',venc.length?'bad':'good'),
+      d:`Debes ${fmt0(sum(act,d=>d.saldo))}. Los mínimos son ${r.toFixed(0)}% de tu ingreso${lim?`; usas ${uso.toFixed(0)}% de tus líneas (ideal <30%)`:''}.${venc.length?' Vencido: '+venc.map(x=>x.it.name).join(', '):''}`})}
+  const fm=fijoMensual(),em=sobreBal('emerg'),meses=fm>0?em/fm:0;
+  out.push({k:'Fondo de emergencia',l:em<S.settings.emergMin?'bad':lvl(meses,S.settings.emergMonths,1),d:`${fmt0(em)} = ${meses.toFixed(1)} meses de gastos fijos. Mínimo ${fmt0(S.settings.emergMin)} ya; meta ${S.settings.emergMonths} meses cuando liquides las TDC.`});
+  const vb=obligaciones(0).filter(x=>x.kind==='bill'&&x.o.days<0);
+  if(S.bills.length)out.push({k:'Pagos fijos',l:vb.length?'bad':'good',d:vb.length?'Vencido: '+vb.map(x=>x.it.name).join(', '):'Sin pagos vencidos.'});
+  const score=sum(out,x=>x.l==='good'?2:x.l==='warn'?1:0)/(out.length*2);
+  return {items:out,score,general:score>=0.75&&!out.some(x=>x.l==='bad')?'good':score>=0.45?'warn':'bad'};
+}
+
+/* ================== APARTADOS SEMANALES ================== */
+function recomendar(wk){
+  const w=weekData(wk),st=S.settings,t=today();
+  let W=w.ingreso,estimado=false;if(W<=0){W=avgWeekIncome();estimado=true}
+  const sub=w.sub>0?w.sub:W/payFactor(),iva=sub*st.ivaPct/100,items=[],np=nextPay();
+  if(np){const dd=daysBetween(t,np[1]),amt=payAmt(np),faltan=Math.max(0,amt-sobreBal('auto')),sem=Math.max(1,Math.ceil(dd/7));
+    items.push({k:'auto',v:dd<=0?faltan:faltan/sem,why:`Faltan ${fmt0(faltan)} para el pago #${np[0]} (${fdate(np[1])}); ${sem} semana(s). Va primero.`})}
+  let bal=sobreBal('fijos'),vf=0;
+  obligaciones(31).forEach(({amount,o})=>{let a=amount;const u=Math.min(bal,a);bal-=u;a-=u;vf+=a/Math.max(1,Math.ceil(o.days/7))});
+  items.push({k:'fijos',v:vf,why:(S.bills.length||S.debts.some(debtActive))?'Pagos mínimos de TDC/préstamos y pagos fijos del próximo mes.':'Captura tus deudas en la pestaña Deudas.'});
+  items.push({k:'imp',v:iva*st.taxPct/100,why:st.taxPct?`${st.taxPct}% del IVA trasladado (${fmt0(iva)}).`:'Configura en Ajustes si debes guardar parte del IVA.'});
+  const mb=sobreBal('mant');
+  items.push({k:'mant',v:mb<st.maintGoal?sub*st.maintPct/100:0,why:mb<st.maintGoal?`${st.maintPct}% de la ruta. Llevas ${fmt0(mb)} de ${fmt0(st.maintGoal)}.`:'¡Meta alcanzada!'});
+  const diarios=w.diarios>0?w.diarios:avgWeekDiarios();
+  const hayDeuda=S.debts.some(debtActive),fm=fijoMensual(),target=hayDeuda?st.emergMin:fm*st.emergMonths,eb=sobreBal('emerg');
+  let ve=eb<target?Math.min(target-eb,W*st.emergPct/100):0;
+  let left=W-sum(items,x=>x.v)-diarios-ve;
+  const autoOk=!np||sobreBal('auto')>=payAmt(np)*0.7||daysBetween(t,np[1])>20;
+  let vc=0,whyC='';
+  if(eb>=Math.min(st.emergMin,target)&&autoOk&&left>0){vc=left*st.abonoPct/100;const top=ordenDeudas(S.debts.filter(debtActive))[0];
+    whyC=top?`${st.abonoPct}% de lo que sobra → abónalo a <b>${esc(top.name)}</b> (${S.settings.strategy==='bola'?'saldo más chico':'tasa más alta'}).`:`${st.abonoPct}% de lo que sobra → abono a capital del auto (ya no tienes TDC).`}
+  else{whyC=eb<st.emergMin?`Primero junta tu fondo mínimo de ${fmt0(st.emergMin)}.`:left<=0?'Esta semana no sobra.':'Primero completa la mensualidad.';if(left>0&&eb<target)ve+=Math.min(target-eb-ve,left*0.5)}
+  items.push({k:'emerg',v:Math.max(0,ve),why:`Meta ${hayDeuda?'mínima (mientras tengas TDC)':st.emergMonths+' meses'}: ${fmt0(target)}. Llevas ${fmt0(eb)}.`});
+  items.push({k:'capital',v:vc,why:whyC});
+  const total=sum(items,x=>x.v);
+  return {W,estimado,items,diarios,libre:W-total-diarios,total,w};
+}
+
+/* ================== VISTAS ================== */
+let TAB='inicio',nuevoTipo='ruta',gastoCat='gasolina',aptWeek=null,movFilter='todo',movMonth=null,pendingRender=false;
+function setTab(t){TAB=t;document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));render();scrollTo(0,0)}
+function render(){
+  pendingRender=false;
+  const map={inicio:vInicio,movs:vMovs,nuevo:vNuevo,auto:vAuto,apartados:vApartados,deudas:vDeudas,ajustes:vAjustes};
+  document.getElementById('view').innerHTML=map[TAB]();
+  document.getElementById('hdrPill').innerHTML=TAB==='ajustes'?'':pill(salud().general);
+  updSyncBadge();
+  if(TAB==='inicio')drawChart();
+  if(TAB==='auto')initSim();
+}
+function softRender(){if(dlg.open||['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))pendingRender=true;else render()}
+function setHeader(t,s){document.getElementById('title').textContent=t;document.getElementById('subtitle').textContent=s||''}
+
+function oblRow(x){const n=x.it.name,dd=x.o.days;
+  return `<div class="row"><div class="l"><div>${x.kind==='debt'?'💳':x.it.type==='seguro'?'🛡️':'📌'} ${esc(n)}</div><div class="muted">${dd<0?'vencido '+fdateS(x.o.date):fdateS(x.o.date)}${x.kind==='debt'?' · mínimo':''}</div></div>
+   <div style="display:flex;gap:6px;align-items:center">${pill(dd<0?'bad':dd<=3?'warn':'good',dd<0?'Vencido':dd===0?'Hoy':dd+' d')} <b>${fmt0(x.amount)}</b> <button class="btn sm" data-act="${x.kind==='debt'?'pagarDebt':'pagarBill'}" data-id="${x.it.id}">Pagar</button></div></div>`}
+
+function vInicio(){
+  setHeader('Inicio',fdate(today()));
+  const s=salud(),t=today(),np=nextPay(),md=monthData(ym(t)),wk=weekData(weekKey(t));
+  const g={good:['Buena administración','Vas bien: sigue apartando cada semana.'],warn:['Administración regular','Hay puntos que atender (revisa abajo).'],bad:['Mala administración / capital bajo','Atiende lo que está en rojo cuanto antes.']}[s.general];
+  let h=`<div class="banner ${s.general}"><b>${LBL[s.general].split(' ')[0]} ${g[0]}</b><div class="muted" style="color:var(--t2)">${g[1]} Puntaje ${(s.score*100).toFixed(0)}/100</div></div>`;
+  if(np){const dd=daysBetween(t,np[1]),amt=payAmt(np),l=dd<0?'bad':dd<=S.settings.remindDays?'warn':'good',b=sobreBal('auto');
+    h+=`<div class="card"><h2>🚗 Próxima mensualidad ${pill(l,dd<0?`⛔ Vencido ${-dd} d`:dd===0?'⚠️ Hoy':`${l==='warn'?'⚠️':'📅'} en ${dd} días`)}</h2>
+    <div class="big">${fmt(amt)}</div><div class="muted">Pago #${np[0]} de 60 · vence ${fdate(np[1])}${segOn(np)?'':' · sin seguro financiado'}</div>
+    <div class="bar"><i style="width:${Math.min(100,b/amt*100)}%;background:${b>=amt?'var(--good)':'var(--inc)'}"></i></div>
+    <div class="muted" style="margin-top:4px">Apartado: ${fmt(b)}</div>
+    <button class="btn full blue" data-act="pagarAuto" data-n="${np[0]}">Marcar pago #${np[0]} como pagado</button></div>`}
+  const ob=obligaciones(10);
+  if(ob.length)h+=`<div class="card"><h2>⏰ Pagos próximos (10 días)</h2>${ob.map(oblRow).join('')}</div>`;
+  const sinDia=S.debts.filter(d=>debtActive(d)&&!d.day);
+  if(sinDia.length)h+=`<div class="banner warn">⚠️ Ponle día límite de pago a: ${sinDia.map(d=>esc(d.name)).join(', ')} para recordártelo. <button class="btn sm" data-act="tab" data-t="deudas">Ir a Deudas</button></div>`;
+  h+=`<div class="card"><h2>📅 Esta semana <span class="muted">${fdateS(wk.wk)} – ${fdateS(wk.end)}</span></h2><div class="grid2">
+    <div class="tile"><div class="k">Ruta ML (sin IVA)</div><div class="v">${fmt0(wk.sub)}</div></div>
+    <div class="tile"><div class="k">Pago esperado con IVA</div><div class="v pos">${fmt0(wk.esperado)}</div></div>
+    <div class="tile"><div class="k">Extras</div><div class="v">${fmt0(wk.extras)}</div></div>
+    <div class="tile"><div class="k">Gastos</div><div class="v neg">${fmt0(wk.gastos)}</div></div></div>
+    <div class="muted" style="margin-top:8px">${wk.dias} días trabajados${wk.km?` · ${wk.km} km · ${fmt(wk.sub/wk.km)}/km`:''}${wk.dias?` · promedio ${fmt0(wk.sub/wk.dias)}/día`:''}</div></div>`;
+  h+=`<div class="card"><h2>🗓️ ${MESES[new Date().getMonth()].toUpperCase()} — balance del mes</h2><div class="grid2">
+    <div class="tile"><div class="k">Ingresos</div><div class="v pos">${fmt0(md.ing)}</div></div>
+    <div class="tile"><div class="k">Gastos (consumo)</div><div class="v neg">${fmt0(md.gastos)}</div></div>
+    <div class="tile"><div class="k">Pagos a deudas</div><div class="v">${fmt0(md.pagos)}</div></div>
+    <div class="tile"><div class="k">Te quedó</div><div class="v ${md.flujo>=0?'pos':'neg'}">${fmt0(md.flujo)}</div></div></div>
+    ${md.conTdc?`<div class="muted" style="margin-top:6px">${fmt0(md.conTdc)} de los gastos fueron con tarjeta (se suman a la deuda).</div>`:''}
+    ${Object.entries(md.porCat).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`<div class="row"><span>${GASTO_CATS[c]||c}</span><span>${fmt0(v)} <span class="muted">${md.gastos?(v/md.gastos*100).toFixed(0):0}%</span></span></div>`).join('')}</div>`;
+  h+=`<div class="card"><h2>📊 Últimas 8 semanas</h2><div id="chart"></div><div class="legend"><span><i style="background:var(--inc)"></i>Ingresos</span><span><i style="background:var(--exp)"></i>Salidas de dinero</span></div></div>`;
+  h+=`<div class="card"><h2>🩺 Salud financiera</h2>${s.items.map(x=>`<div class="row"><div class="l"><div><b>${x.k}</b></div><div class="muted">${x.d}</div></div>${pill(x.l)}</div>`).join('')}</div>`;
+  h+=`<button class="btn full" data-act="tab" data-t="ajustes">⚙️ Ajustes, sincronización y respaldo</button>`;
+  return h;
+}
+function drawChart(){
+  const el=document.getElementById('chart');if(!el)return;
+  const ws=lastWeeks(8,true).reverse(),W=Math.min(600,el.clientWidth||330),H=170,pl=44,pb=22,pt=8;
+  const max=Math.max(1,...ws.map(w=>Math.max(w.ingreso,w.salidas))),nice=Math.pow(10,Math.floor(Math.log10(max))),top=Math.ceil(max/nice)*nice;
+  const gw=(W-pl)/ws.length,bw=Math.min(16,(gw-8)/2),y=v=>pt+(H-pt-pb)*(1-v/top);
+  let s=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Ingresos y salidas por semana">`;
+  [0,.5,1].forEach(f=>{const v=top*f;s+=`<line x1="${pl}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="#2b3340"/><text x="${pl-6}" y="${y(v)+4}" fill="#8b8a83" font-size="10" text-anchor="end">${v>=1000?(v/1000).toFixed(v%1000?1:0)+'k':v}</text>`});
+  const bar=(x,v,c)=>{if(v<=0)return '';const h=Math.max(2,y(0)-y(v)),r=Math.min(4,bw/2,h),yt=y(v);return `<path d="M${x},${y(0)} V${yt+r} Q${x},${yt} ${x+r},${yt} H${x+bw-r} Q${x+bw},${yt} ${x+bw},${yt+r} V${y(0)} Z" fill="${c}"/>`};
+  ws.forEach((w,i)=>{const cx=pl+gw*i+gw/2,d=pd(w.wk);
+    s+=bar(cx-bw-1,w.ingreso,'#3987e5')+bar(cx+1,w.salidas,'#d95926')+`<text x="${cx}" y="${H-6}" fill="#8b8a83" font-size="10" text-anchor="middle">${d.getDate()}/${d.getMonth()+1}</text>`;
+    s+=`<rect x="${pl+gw*i}" y="0" width="${gw}" height="${H-pb}" fill="transparent" data-tip="Semana ${fdateS(w.wk)}|Ingresos ${fmt0(w.ingreso)}|Salidas ${fmt0(w.salidas)}|Neto ${fmt0(w.ingreso-w.salidas)}"/>`});
+  el.innerHTML=s+'</svg>';
+  const tip=document.getElementById('tip');
+  el.querySelectorAll('[data-tip]').forEach(r=>{const show=e=>{const p=e.touches?e.touches[0]:e;tip.innerHTML=r.dataset.tip.split('|').join('<br>');tip.style.display='block';tip.style.left=Math.min(innerWidth-160,p.clientX+10)+'px';tip.style.top=(p.clientY-70)+'px'};
+    r.addEventListener('mousemove',show);r.addEventListener('touchstart',show,{passive:true});r.addEventListener('mouseleave',()=>tip.style.display='none')});
+}
+document.addEventListener('touchstart',e=>{if(!e.target.dataset?.tip)document.getElementById('tip').style.display='none'},{passive:true});
+
+function vNuevo(){
+  setHeader('Registrar','Anota tu día');
+  let h=`<div class="seg">${[['ruta','🚚 Ruta ML'],['extra','💵 Extra'],['gasto','🧾 Gasto']].map(([k,n])=>`<button data-act="tipo" data-k="${k}" class="${nuevoTipo===k?'on':''}">${n}</button>`).join('')}</div><div class="card"><form id="fNuevo">`;
+  h+=`<label>Fecha</label><input type="date" name="date" value="${today()}" required>`;
+  if(nuevoTipo==='ruta'){
+    h+=`<label>Ganancia del recorrido (sin IVA)</label><input name="amount" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" required>
+    <div class="hint">Lo que ves por día en la app de Mercado Libre. El IVA (${S.settings.ivaPct}%) se suma solo en el total de la semana.</div>
+    <div class="grid2"><div><label>Km (opcional)</label><input name="km" type="number" inputmode="decimal" step="0.1"></div><div><label>Paquetes (opcional)</label><input name="paq" type="number" inputmode="numeric"></div></div>`;
+  }else if(nuevoTipo==='extra'){
+    h+=`<label>Monto</label><input name="amount" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" required><label>Concepto</label><input name="note" placeholder="Propina, bono, venta, otro trabajo…">`;
+  }else{
+    h+=`<label>Categoría</label><div class="chips">${Object.entries(GASTO_CATS).map(([k,n])=>`<button type="button" data-act="cat" data-k="${k}" class="${gastoCat===k?'on':''}">${n}</button>`).join('')}</div>
+    <label>Monto</label><input name="amount" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" required>
+    ${gastoCat==='gasolina'?`<label>Litros (opcional)</label><input name="lts" type="number" inputmode="decimal" step="0.01">`:''}
+    <label>Nota</label><input name="note" placeholder="${gastoCat==='mant'?'Afinación, llantas, aceite…':'Opcional'}">
+    <label>¿Con qué pagaste?</label><select name="card"><option value="">💵 Efectivo / débito</option>${S.debts.filter(d=>d.type==='tdc').map(d=>`<option value="${d.id}">💳 ${esc(d.name)} (se suma a su deuda)</option>`).join('')}</select>
+    <label>¿Salió de un apartado? (solo efectivo/débito)</label><select name="from"><option value="">No, del dinero del día</option>${Object.entries(SOBRES).map(([k,s])=>`<option value="${k}" ${(gastoCat==='mant'&&k==='mant')||(gastoCat==='auto'&&k==='auto')?'selected':''}>${s.e} ${s.n} (${fmt0(sobreBal(k))})</option>`).join('')}</select>`;
+  }
+  h+=`<button class="btn full primary" type="submit">Guardar</button></form></div>`;
+  const rec=S.entries.slice().sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id)).slice(0,5);
+  if(rec.length)h+=`<div class="card"><h2>Últimos registros</h2>${rec.map(rowEntry).join('')}</div>`;
+  return h;
+}
+const debtName=id=>(S.debts.find(d=>d.id===id)||{}).name;
+function rowEntry(e){
+  const n=e.type==='ruta'?'🚚 Ruta ML':e.type==='extra'?'💵 '+esc(e.note||'Extra'):e.type==='pago'?'💳 Pago a '+esc(debtName(e.debt)||e.note||'deuda'):(GASTO_CATS[e.cat]||e.cat);
+  const det=[fdateS(e.date),e.type==='ruta'?`con IVA ${fmt0(entryValue(e))}`:'',e.km?e.km+' km':'',e.paq?e.paq+' paq':'',e.lts?e.lts+' L':'',e.type==='gasto'&&e.note?esc(e.note):'',e.card?'con '+esc(debtName(e.card)||'TDC'):'',e.from?'de '+SOBRES[e.from].n:''].filter(Boolean).join(' · ');
+  const out=e.type==='gasto'||e.type==='pago';
+  return `<div class="row"><div class="l"><div>${n}</div><div class="muted">${det}</div></div><div style="display:flex;gap:6px;align-items:center"><b class="${out?'neg':'pos'}">${out?'-':''}${fmt(e.amount)}</b><button class="btn sm" data-act="delEntry" data-id="${e.id}" aria-label="Borrar">🗑️</button></div></div>`;
+}
+
+function vMovs(){
+  if(!movMonth)movMonth=ym(today());
+  setHeader('Movimientos',fmonth(movMonth));
+  let es=S.entries.filter(e=>ym(e.date)===movMonth);
+  if(movFilter!=='todo')es=es.filter(e=>e.type===movFilter);
+  es.sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
+  let h=`<div class="card" style="display:flex;justify-content:space-between;align-items:center"><button class="btn sm" data-act="mes" data-d="-1">◀</button><b>${fmonth(movMonth).toUpperCase()}</b><button class="btn sm" data-act="mes" data-d="1">▶</button></div>`;
+  h+=`<div class="seg">${[['todo','Todo'],['ruta','Ruta'],['extra','Extras'],['gasto','Gastos'],['pago','Pagos']].map(([k,n])=>`<button data-act="movf" data-k="${k}" class="${movFilter===k?'on':''}">${n}</button>`).join('')}</div>`;
+  if(movFilter==='todo'||movFilter==='ruta'){
+    const wks=[...new Set(S.entries.filter(e=>e.type==='ruta'&&ym(e.date)===movMonth).map(e=>weekKey(e.date)))].sort().reverse();
+    if(wks.length)h+=`<div class="card"><h2>🚚 Cortes semanales Mercado Libre</h2>${wks.map(wk=>{const w=weekData(wk),has=w.real!=null&&w.real!=='',dif=has?(+w.real-w.esperado):null;
+      return `<div class="row"><div class="l"><div>${fdateS(w.wk)} – ${fdateS(w.end)}</div><div class="muted">Subtotal ${fmt0(w.sub)} + IVA ${fmt0(w.iva)}${w.ret?` − ret. ${fmt0(w.ret)}`:''} = <b style="color:var(--t1)">${fmt0(w.esperado)}</b>${has?` · real ${fmt0(+w.real)} ${Math.abs(dif)>1?`<span class="${dif<0?'neg':'pos'}">(${dif>0?'+':''}${fmt0(dif)})</span>`:'✅'}`:''}</div></div><button class="btn sm" data-act="real" data-wk="${wk}">${has?'Editar':'Depósito real'}</button></div>`}).join('')}
+      <div class="hint">Captura lo que realmente te depositó ML para comparar con lo esperado.</div></div>`;
+  }
+  h+=`<div class="card">${es.length?es.map(rowEntry).join(''):'<div class="muted">Sin movimientos.</div>'}</div><button class="btn full" data-act="csv">⬇️ Exportar a Excel (CSV)</button>`;
+  return h;
+}
+
+function vDeudas(){
+  setHeader('Deudas','TDC y préstamos');
+  const P=debtPlan(),act=P.act,st=S.settings;
+  const lim=sum(act.filter(d=>d.limite>0),d=>d.limite),uso=lim?sum(act.filter(d=>d.limite>0),d=>d.saldo)/lim*100:null;
+  let h=`<div class="card"><div class="grid2">
+    <div class="tile"><div class="k">Deuda total</div><div class="v ${P.total?'neg':''}">${fmt0(P.total)}</div></div>
+    <div class="tile"><div class="k">Mínimos del mes</div><div class="v">${fmt0(P.mins)}</div></div>
+    <div class="tile"><div class="k">Uso de líneas</div><div class="v">${uso==null?'—':uso.toFixed(0)+'%'}</div>${uso!=null?pill(lvl(uso,30,70,false)):''}</div>
+    <div class="tile"><div class="k">Libre de deudas en</div><div class="v">${!act.length?'🎉 Ya':P.budget<=P.mins?'—':P.meses>=360?'+30 años':P.meses+' meses'}</div></div></div></div>`;
+  if(act.length){
+    let l='good',msg='';
+    if(!P.inc){l='warn';msg='Registra al menos una semana de rutas para calcular cuánto puedes abonar.'}
+    else if(P.budget<P.mins){l='bad';msg=`Después de la mensualidad del auto y tus gastos, te quedan ${fmt0(P.budget)} al mes y los mínimos suman ${fmt0(P.mins)}. Paga primero el auto y los mínimos más caros; considera pedir reestructura y deja de usar las TDC.`}
+    else if(P.budget<P.mins*1.3){l='warn';msg=`Alcanzas los mínimos, pero sobra poco (${fmt0(P.budget-P.mins)}) para bajar la deuda.`}
+    else msg=`Tienes ${fmt0(P.budget-P.mins)} extra al mes para bajar deuda. ¡Úsalo según el plan!`;
+    h+=`<div class="banner ${l}"><b>${LBL[l].split(' ')[0]} Plan del mes</b><div class="muted" style="color:var(--t2)">${msg}</div></div>`;
+    h+=`<div class="card"><h2>🎯 Cuánto pagar a cada una este mes</h2>
+      <div class="muted" style="margin-bottom:6px">Orden: 1) mensualidad del auto ${fmt0(P.car)} · 2) mínimos de todas · 3) el extra a la de ${st.strategy==='bola'?'menor saldo':'tasa más alta'}.</div>
+      ${P.orden.map((d,i)=>{const a=P.alloc[d.id]||0,ni=+d.pagoNoInt||0;return `<div class="row"><div class="l"><div>${i===0&&a>debtMin(d)+0.5?'⭐ ':''}${esc(d.name)}</div><div class="muted">Mínimo ${fmt0(debtMin(d))}${ni?` · no generar intereses ${fmt0(ni)} ${a>=ni?'✅':''}`:''} · ${+d.tasa?d.tasa+'% anual':'sin tasa (uso '+rateOf(d)+'%)'}</div></div><b>${fmt0(a)}</b></div>`}).join('')}
+      <details style="margin-top:8px"><summary class="muted">¿De dónde sale? (estimado mensual)</summary><div class="muted" style="margin-top:6px">
+      Ingreso promedio ${fmt0(P.inc)} − auto ${fmt0(P.car)} − pagos fijos ${fmt0(P.bills)} − gasto diario ${fmt0(P.diarios)} − mantenimiento ${fmt0(P.mant)} − impuestos ${fmt0(P.imp)} − emergencia ${fmt0(P.emerg)} = <b style="color:var(--t1)">${fmt0(P.budget)}</b> para deudas.${P.intTot?` Pagarías ~${fmt0(P.intTot)} de intereses en total.`:''}</div></details>
+      <div class="hint">El abono a capital del auto (15.24%) conviene solo cuando ya no tengas TDC: las tarjetas cobran mucho más interés.</div></div>`;
+  }
+  h+=`<div class="card"><h2>💳 Mis tarjetas y préstamos</h2>${S.debts.length?S.debts.map(d=>{const o=occ(d),pagos=sum(S.entries.filter(e=>e.type==='pago'&&e.debt===d.id&&ym(e.date)===ym(today())),e=>e.amount);
+    return `<div class="row"><div class="l"><div>${d.type==='tdc'?'💳':'🏦'} <b>${esc(d.name)}</b></div><div class="muted">${debtActive(d)?`Debes <b style="color:#ff7b7b">${fmt0(d.saldo)}</b>${d.limite?` de ${fmt0(d.limite)} (${(d.saldo/d.limite*100).toFixed(0)}%)`:''}`:'Sin deuda ✅'}${d.day?` · paga el día ${d.day}${o&&debtActive(d)?` (${o.days<0?'vencido':o.days===0?'hoy':'en '+o.days+' d'})`:''}`:debtActive(d)?' · <span style="color:var(--warn)">sin día de pago</span>':''}${pagos?` · pagado este mes ${fmt0(pagos)}`:''}</div></div>
+    <div style="display:flex;gap:6px">${debtActive(d)?`<button class="btn sm blue" data-act="pagarDebt" data-id="${d.id}">Pagar</button>`:''}<button class="btn sm" data-act="editDebt" data-id="${d.id}">✏️</button></div></div>`}).join(''):'<div class="muted">Sin deudas registradas.</div>'}
+    <button class="btn full" data-act="editDebt">+ Agregar TDC o préstamo</button>
+    <div class="hint">Actualiza el saldo cuando llegue tu estado de cuenta (✏️). Los gastos que registres "con tarjeta" se suman solos a su deuda.</div></div>`;
+  h+=`<div class="card"><h2>Estrategia</h2><div class="seg"><button data-act="strat" data-k="avalancha" class="${st.strategy!=='bola'?'on':''}">🏔️ Avalancha</button><button data-act="strat" data-k="bola" class="${st.strategy==='bola'?'on':''}">⛄ Bola de nieve</button></div>
+    <div class="hint">${st.strategy==='bola'?'Bola de nieve: liquidas primero la de menor saldo. Motiva ver tarjetas en cero rápido.':'Avalancha: extra a la de tasa más alta. Es la que menos intereses te cobra en total (recomendada). Captura la tasa de cada TDC.'}</div></div>`;
+  return h;
+}
+
+function vAuto(){
+  setHeader('Mi auto',`${CAR_INFO.marca} · ${CAR_INFO.plazo} meses · tasa ${CAR_INFO.tasa}%`);
+  const t=today(),np=nextPay(),cap=capitalRestante(),pagados=Object.keys(S.carPaid).length,capTotal=sum(SCHEDULE,p=>p[3]),st=S.settings;
+  let h=`<div class="card"><h2>Progreso del crédito</h2><div class="grid2">
+   <div class="tile"><div class="k">Pagos hechos</div><div class="v">${pagados} / 60</div></div>
+   <div class="tile"><div class="k">Capital pendiente</div><div class="v">${fmt0(cap)}</div></div></div>
+   <div class="bar" style="height:10px"><i style="width:${(1-cap/capTotal)*100}%;background:var(--good)"></i></div>
+   <div class="muted" style="margin-top:4px">${((1-cap/capTotal)*100).toFixed(1)}% del capital liquidado · abonos extra: ${fmt0(sum(S.prepay,x=>x.amount))}</div></div>`;
+  // Seguros
+  const seg=S.bills.filter(b=>b.type==='seguro');
+  h+=`<div class="card"><h2>🛡️ Seguros</h2>
+   <div class="row"><div class="l"><div>Seguro financiado (original)</div><div class="muted">${st.segCancelFrom?`Cancelado desde el pago #${st.segCancelFrom} (${fdate(SCHEDULE[st.segCancelFrom-1][1])})`:'Incluido en tu mensualidad'}</div></div>${pill(st.segCancelFrom?'warn':'good',st.segCancelFrom?'Cancelado':'Activo')}</div>
+   <label>¿Desde qué pago ya no lo pagarás?</label><select id="segSel" data-act="segSel"><option value="0">Lo sigo pagando</option>${SCHEDULE.filter(p=>!S.carPaid[p[0]]).map(p=>`<option value="${p[0]}" ${st.segCancelFrom===p[0]?'selected':''}>Pago #${p[0]} · ${fdate(p[1])} → ${fmt0(vehPart(p))} (−${fmt0(segPart(p))})</option>`).join('')}</select>
+   <div class="hint">Mientras tengas el crédito, la financiera exige que el auto esté asegurado. Al cancelar normalmente debes entregarles otra póliza con ellos como <b>beneficiario preferente</b>. Pregunta si te devuelven la parte no usada del seguro y pide tu nuevo calendario; si el monto cambia, ajústalo al marcar el pago.</div>
+   ${seg.map(b=>{const o=occ(b);return `<div class="row"><div class="l"><div>🛡️ ${esc(b.name)}</div><div class="muted">${fmt0(b.amount)} ${b.freq==='a'?'al año':'al mes'} · desde ${b.desde?fmonth(b.desde):'ya'}${o?` · próximo ${fdate(o.date)}`:''}</div></div><button class="btn sm" data-act="editBill" data-id="${b.id}">✏️</button></div>`}).join('')}
+   <button class="btn full" data-act="addSeguro">+ Agregar seguro de plataforma</button>
+   ${np&&segOn(SCHEDULE[12])&&np[0]<=12?`<div class="banner warn" style="margin-top:10px">⚠️ Si sigues con el seguro original, desde el pago #13 (dic 2027) la mensualidad sube a <b>${fmt(SCHEDULE[12][2])}</b>.</div>`:''}</div>`;
+  const V=np?vehPart(np):7801.55,base=simular(cap,V);
+  h+=`<div class="card"><h2>📉 Simulador de abono a capital</h2>
+   <label>¿Cuánto quieres abonar?</label><input id="simAmt" type="number" inputmode="decimal" placeholder="Ej. 5000" value="${sobreBal('capital')>0&&!S.debts.some(debtActive)?Math.round(sobreBal('capital')):''}">
+   <div id="simOut" class="muted" style="margin-top:8px" data-cap="${cap}" data-v="${V}" data-base="${base.intereses}" data-bm="${base.meses}"></div>
+   ${S.debts.some(debtActive)?`<div class="banner warn" style="margin-top:10px">Tienes deudas de TDC: conviene liquidarlas antes de abonar al auto (cobran más interés).</div>`:''}
+   <div class="hint">Estimación con tasa ${CAR_INFO.tasa}% + IVA sobre intereses, reduciendo plazo. Pide que el abono sea "a capital, reduciendo plazo" y confirma el monto con la financiera.</div>
+   <button class="btn full" data-act="prepay">Registrar abono a capital hecho</button></div>`;
+  if(np)h+=`<div class="card"><h2>🔎 Desglose del próximo pago (#${np[0]})</h2>
+   <div class="row"><span>Abono a capital</span><span>${fmt(np[3])}</span></div><div class="row"><span>Intereses</span><span>${fmt(np[4])}</span></div>
+   <div class="row"><span>IVA intereses</span><span>${fmt(np[5])}</span></div><div class="row"><span>Seguro financiado</span><span>${segOn(np)?fmt(segPart(np)):'<s>'+fmt(segPart(np))+'</s> cancelado'}</span></div>
+   <div class="row"><b>Total</b><b>${fmt(payAmt(np))}</b></div></div>`;
+  h+=`<div class="card"><h2>📆 Calendario de pagos <button class="btn sm" data-act="ics">Agregar a mi calendario</button></h2>
+   <div class="hint" style="margin-bottom:8px">Descarga los recordatorios (3 días y 1 día antes) de la mensualidad, tus TDC y pagos fijos para el calendario del celular.</div>
+   <table><tr><th>#</th><th>Vence</th><th>Total</th><th></th></tr>${SCHEDULE.map(p=>{const paid=S.carPaid[p[0]],late=!paid&&p[1]<t,cls=paid?'paid':late?'late':np&&np[0]===p[0]?'next':'';
+    return `<tr class="${cls}"><td>${p[0]}</td><td>${fdate(p[1])}</td><td>${fmt(payAmt(p))}</td><td>${paid?`<button class="btn sm" data-act="unpay" data-n="${p[0]}">✅</button>`:`<button class="btn sm" data-act="pagarAuto" data-n="${p[0]}">Pagar</button>`}</td></tr>`}).join('')}</table></div>`;
+  return h;
+}
+function initSim(){const i=document.getElementById('simAmt'),o=document.getElementById('simOut');if(!i)return;const cap=+o.dataset.cap,V=+o.dataset.v,bi=+o.dataset.base,bm=+o.dataset.bm;
+  const f=()=>{const a=+i.value||0,r=simular(Math.max(0,cap-a),V);o.innerHTML=a>0?`<span style="color:var(--t1)">Ahorrarías <b class="pos">${fmt0(bi-r.intereses)}</b> en intereses y terminarías <b class="pos">${bm-r.meses} meses antes</b>.</span>`:`Intereses + IVA que aún pagarás: <b>${fmt0(bi)}</b>`};i.oninput=f;f()}
+
+function vApartados(){
+  if(!aptWeek)aptWeek=addDays(weekKey(today()),-7);
+  setHeader('Apartados','Repite estos montos en tu banco');
+  const r=recomendar(aptWeek);
+  let h=`<div class="card" style="display:flex;justify-content:space-between;align-items:center"><button class="btn sm" data-act="aw" data-d="-7">◀</button><div style="text-align:center"><b>Semana ${fdateS(aptWeek)}</b><div class="muted">${r.estimado?'Sin ingresos aún: uso tu promedio':aptWeek===weekKey(today())?'Semana en curso (parcial)':'Pago de ML + extras'}: ${fmt0(r.W)}</div></div><button class="btn sm" data-act="aw" data-d="7">▶</button></div>`;
+  if(r.W<=0)h+=`<div class="banner warn">Registra tus rutas para calcular cuánto apartar.</div>`;
+  else{const l=r.libre<0?'bad':r.libre<r.W*0.05?'warn':'good';
+    h+=`<div class="banner ${l}"><b>${l==='bad'?'⛔ Esta semana no alcanza':l==='warn'?'⚠️ Semana justa':'✅ Te alcanza'}</b><div class="muted" style="color:var(--t2)">Apartar ${fmt0(r.total)} · gastos del día a día ~${fmt0(r.diarios)} · ${r.libre>=0?`libre para ti ${fmt0(r.libre)}`:`faltan ${fmt0(-r.libre)}: recorta gastos o mete más rutas`}</div></div>`;
+    h+=`<div class="card"><h2>🐷 Cuánto apartar esta semana</h2>${r.items.map(it=>`<div class="row"><div class="l"><div>${SOBRES[it.k].e} ${SOBRES[it.k].n}</div><div class="muted">${it.why}</div></div><b>${fmt0(it.v)}</b></div>`).join('')}
+     <button class="btn full primary" data-act="aplicar" data-wk="${aptWeek}">Ya los aparté en mi banco ✔</button>
+     <div class="hint">Al confirmar se suman a tus saldos de abajo. Si apartaste otra cantidad, usa "± Ajustar".</div></div>`}
+  h+=`<div class="card"><h2>💰 Saldos de mis apartados <span class="muted">${fmt0(sum(Object.keys(SOBRES),sobreBal))}</span></h2>${Object.entries(SOBRES).map(([k,s])=>{const b=sobreBal(k);return `<div class="row"><div class="l"><div>${s.e} ${s.n}</div>${k==='mant'?`<div class="bar"><i style="width:${Math.min(100,b/S.settings.maintGoal*100)}%"></i></div>`:''}</div><div style="display:flex;gap:6px;align-items:center"><b class="${b<0?'neg':''}">${fmt0(b)}</b><button class="btn sm" data-act="ajSobre" data-k="${k}">± Ajustar</button></div></div>`}).join('')}</div>`;
+  const ult=S.moves.slice().sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id)).slice(0,10);
+  if(ult.length)h+=`<div class="card"><h2>Últimos movimientos</h2>${ult.map(m=>`<div class="row"><div class="l"><div>${SOBRES[m.sobre].e} ${SOBRES[m.sobre].n}</div><div class="muted">${fdateS(m.date)} · ${esc(m.note||'')}</div></div><div style="display:flex;gap:6px;align-items:center"><b class="${m.amount<0?'neg':'pos'}">${fmt0(m.amount)}</b><button class="btn sm" data-act="delMove" data-id="${m.id}">🗑️</button></div></div>`).join('')}</div>`;
+  h+=`<div class="card"><h2>📌 Prioridades</h2><div class="muted">1) Mensualidad del auto → 2) mínimos de TDC y pagos fijos → 3) impuestos → 4) mantenimiento → 5) fondo mínimo de emergencia (${fmt0(S.settings.emergMin)}) → 6) extra a la TDC más cara → 7) cuando no tengas TDC: fondo de 3 meses y abono a capital del auto.</div></div>`;
+  return h;
+}
+
+function vAjustes(){
+  setHeader('Ajustes','');
+  const st=S.settings;
+  let h=vSync();
+  h+=`<div class="card"><h2>📌 Pagos fijos y seguros</h2>${S.bills.length?S.bills.map(b=>{const o=occ(b);return `<div class="row"><div class="l"><div>${b.type==='seguro'?'🛡️':'📌'} ${esc(b.name)}</div><div class="muted">Día ${b.day} · ${fmt0(b.amount)} ${FREQ[b.freq||'m']}${b.freq==='q'?` (días ${quinDays(b.day).join(' y ')})`:''}${b.desde?' · desde '+fmonth(b.desde):''}${o?` · próximo ${fdateS(o.date)}`:''}</div></div><div style="display:flex;gap:6px"><button class="btn sm" data-act="editBill" data-id="${b.id}">✏️</button></div></div>`}).join(''):'<div class="muted">Celular, internet, renta, seguro de plataforma… (las TDC van en la pestaña Deudas).</div>'}
+   <button class="btn full" data-act="editBill">+ Agregar pago fijo</button></div>`;
+  h+=`<div class="card"><form id="fSet"><h2>🚚 Mercado Libre</h2>
+   <div class="grid2"><div><label>IVA trasladado %</label><input name="ivaPct" type="number" step="0.01" value="${st.ivaPct}"></div>
+   <div><label>Inicio de semana</label><select name="weekStart">${['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'].map((d,i)=>`<option value="${i}" ${+st.weekStart===i?'selected':''}>${d}</option>`).join('')}</select></div>
+   <div><label>Retención IVA %</label><input name="retIvaPct" type="number" step="0.01" value="${st.retIvaPct}"></div>
+   <div><label>Retención ISR %</label><input name="retIsrPct" type="number" step="0.01" value="${st.retIsrPct}"></div></div>
+   <div class="hint">Si ML te retiene impuestos en el corte, ponlos aquí para que el total esperado cuadre.</div>
+   <h2 style="margin-top:16px">🐷 Reglas de apartados</h2>
+   <div class="grid2"><div><label>Mantenimiento % de ruta</label><input name="maintPct" type="number" step="0.5" value="${st.maintPct}"></div>
+   <div><label>Meta mantenimiento $</label><input name="maintGoal" type="number" step="100" value="${st.maintGoal}"></div>
+   <div><label>Fondo mínimo emergencia $</label><input name="emergMin" type="number" step="500" value="${st.emergMin}"></div>
+   <div><label>Meta emergencia (meses)</label><input name="emergMonths" type="number" step="0.5" value="${st.emergMonths}"></div>
+   <div><label>Emergencia % semanal</label><input name="emergPct" type="number" step="0.5" value="${st.emergPct}"></div>
+   <div><label>% del IVA para SAT</label><input name="taxPct" type="number" step="1" value="${st.taxPct}"></div>
+   <div><label>% sobrante a deudas</label><input name="abonoPct" type="number" step="5" value="${st.abonoPct}"></div>
+   <div><label>Avisar mensualidad (días)</label><input name="remindDays" type="number" value="${st.remindDays}"></div></div>
+   <div class="hint">Si no sabes cuánto del IVA debes al SAT, pregúntale a tu contador.</div>
+   <button class="btn full primary" type="submit">Guardar ajustes</button></form></div>`;
+  h+=`<div class="card"><h2>💾 Respaldo</h2><div class="muted">Aunque sincronices, descarga un respaldo de vez en cuando.</div>
+   <button class="btn full blue" data-act="export">Descargar respaldo</button>
+   <label class="btn full" style="margin-top:10px">Restaurar respaldo<input type="file" accept=".json,application/json" id="impFile" hidden></label>
+   <button class="btn full danger" data-act="reset">Borrar todo en este celular</button></div>
+   <button class="btn full" data-act="tab" data-t="inicio">← Volver</button>`;
+  return h;
+}
+
+/* ================== SINCRONIZACIÓN (Supabase) ================== */
+let SC=null;try{SC=JSON.parse(localStorage.getItem(SKEY))}catch(e){}
+const saveSC=()=>SC?localStorage.setItem(SKEY,JSON.stringify(SC)):localStorage.removeItem(SKEY);
+let syncing=false,again=false,syncTimer=null;
+function scheduleSync(){if(!SC)return;clearTimeout(syncTimer);syncTimer=setTimeout(()=>sync(),1500)}
+async function rpc(fn,body){
+  const h={'apikey':SC.k,'Content-Type':'application/json'};if(!SC.k.startsWith('sb_'))h.Authorization='Bearer '+SC.k;
+  const r=await fetch(SC.u.replace(/\/+$/,'')+'/rest/v1/rpc/'+fn,{method:'POST',headers:h,body:JSON.stringify(body)});
+  if(!r.ok)throw new Error(r.status+': '+(await r.text()).slice(0,140));const t=await r.text();return t&&t!=='null'?JSON.parse(t):null;
+}
+async function sync(manual){
+  if(!SC)return;if(syncing){again=true;return}syncing=true;SC.state='…';updSyncBadge();
+  try{
+    const remote=await rpc('get_state',{p_code:SC.c}),before=JSON.stringify(S);
+    if(remote&&remote.entries)S=merge(S,remote);
+    localStorage.setItem(KEY,JSON.stringify(S));
+    await rpc('put_state',{p_code:SC.c,p_data:S});
+    SC.last=Date.now();SC.err='';if(JSON.stringify(S)!==before)softRender();
+  }catch(e){SC.err=String(e.message||e)}
+  finally{SC.state='';saveSC();syncing=false;updSyncBadge();if(manual)toast(SC.err?'⚠️ No se pudo sincronizar':'☁️ Sincronizado');if(TAB==='ajustes'&&manual)softRender();if(again){again=false;sync()}}
+}
+function updSyncBadge(){const b=document.getElementById('syncBadge');if(!SC){b.textContent='';return}
+  b.textContent=SC.state==='…'?'☁️ …':SC.err?'☁️⚠️':'☁️✓';b.title=SC.err||('Última sincronización '+(SC.last?new Date(SC.last).toLocaleTimeString('es-MX'):'—'))}
+const encKey=o=>'FR1.'+btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+const decKey=s=>JSON.parse(decodeURIComponent(escape(atob(s.trim().replace(/^FR1\./,'')))));
+function newCode(){const a=new Uint8Array(24);crypto.getRandomValues(a);return [...a].map(x=>'abcdefghijkmnpqrstuvwxyz23456789'[x%32]).join('')}
+function vSync(){
+  if(SC)return `<div class="card"><h2>☁️ Sincronización ${pill(SC.err?'bad':'good',SC.err?'Error':'Activa')}</h2>
+    <div class="muted">${SC.err?'Error: '+esc(SC.err):'Última: '+(SC.last?new Date(SC.last).toLocaleString('es-MX'):'—')}. Se sincroniza sola al abrir la app y después de cada cambio (necesita internet; sin señal guarda en el celular y sube después).</div>
+    <button class="btn full blue" data-act="syncNow">Sincronizar ahora</button>
+    <button class="btn full" data-act="copyKey">📋 Copiar clave para mi otro celular</button>
+    <button class="btn full danger" data-act="unsync">Desconectar este celular</button>
+    <div class="hint">La clave es como una contraseña: quien la tenga ve tus datos. Pásatela solo a ti mismo.</div></div>`;
+  return `<div class="card"><h2>☁️ Sincronizar iPhone y Android</h2>
+   <div class="muted">Para que lo que registres en un celular aparezca en el otro, se usa una base de datos gratuita (Supabase) que tú creas una sola vez:</div>
+   <ol class="muted" style="padding-left:18px;margin:8px 0">
+    <li>Crea una cuenta gratis en <b>supabase.com</b> y un proyecto nuevo.</li>
+    <li>Ve a <b>SQL Editor</b>, pega el código (botón de abajo) y presiona <b>Run</b>.</li>
+    <li>En <b>Project Settings → API</b> copia el <b>Project URL</b> y la clave <b>anon / publishable</b>.</li>
+    <li>Pégalos aquí en el <b>primer</b> celular y toca Activar. Luego copia la clave y pégala en el otro celular.</li></ol>
+   <button class="btn full" data-act="copySQL">📋 Copiar código SQL</button>
+   <label>Project URL <span class="muted">(o pega aquí el bloque completo de .env.local)</span></label><textarea id="sbUrl" rows="2" placeholder="https://xxxx.supabase.co" autocapitalize="off" autocorrect="off"></textarea>
+   <label>Clave anon / publishable</label><input id="sbKey" placeholder="eyJ... o sb_publishable_..." autocapitalize="off" autocorrect="off">
+   <button class="btn full primary" data-act="activar">Activar en este celular (el primero)</button>
+   <label style="margin-top:18px">¿Ya lo activaste en el otro celular? Pega aquí la clave:</label><textarea id="joinKey" rows="3" placeholder="FR1...." autocapitalize="off" autocorrect="off"></textarea>
+   <button class="btn full blue" data-act="unirme">Unir este celular</button></div>`;
+}
+const SQL=`create table if not exists public.finanzas_sync (code text primary key, data jsonb not null, updated_at timestamptz not null default now());
+alter table public.finanzas_sync enable row level security;
+create or replace function public.get_state(p_code text) returns jsonb language sql security definer set search_path = public as $$ select data from public.finanzas_sync where code = p_code and length(p_code) >= 24; $$;
+create or replace function public.put_state(p_code text, p_data jsonb) returns void language plpgsql security definer set search_path = public as $$ begin if length(p_code) < 24 then raise exception 'codigo invalido'; end if; insert into public.finanzas_sync(code, data, updated_at) values (p_code, p_data, now()) on conflict (code) do update set data = excluded.data, updated_at = now(); end $$;
+revoke all on function public.get_state(text) from public; revoke all on function public.put_state(text, jsonb) from public;
+grant execute on function public.get_state(text) to anon, authenticated; grant execute on function public.put_state(text, jsonb) to anon, authenticated;`;
+async function copyText(t,msg){try{await navigator.clipboard.writeText(t);toast(msg)}catch(e){openDlg(`<h2 style="margin-top:0">Copia este texto</h2><textarea rows="8" readonly onclick="this.select()">${esc(t)}</textarea><button class="btn full" data-close>Cerrar</button>`)}}
+async function activarSync(cfg,msgOk){
+  SC=Object.assign({last:0,err:''},cfg);saveSC();await sync();
+  if(SC.err){const e=SC.err;SC=null;saveSC();alert('No se pudo conectar: '+e+'\n\nRevisa la URL, la clave y que hayas corrido el SQL.');render();return}
+  toast(msgOk);render();
+}
+
+/* ================== DIÁLOGOS ================== */
+const dlg=document.getElementById('dlg');
+function openDlg(html,onSubmit){
+  document.getElementById('dlgBody').innerHTML=html;dlg.showModal();
+  const f=dlg.querySelector('form');
+  if(f)f.onsubmit=e=>{e.preventDefault();const d=Object.fromEntries(new FormData(f));if(onSubmit(d)!==false){dlg.close();save();render()}};
+  dlg.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>dlg.close());
+}
+dlg.addEventListener('close',()=>{if(pendingRender)render()});
+const dlgBtns=(extra='')=>`<div style="display:flex;gap:8px;margin-top:14px">${extra}<button type="button" class="btn" data-close style="flex:1">Cancelar</button><button class="btn primary" style="flex:1">Guardar</button></div>`;
+const sobreSelect=(def)=>`<label>¿De qué apartado sale?</label><select name="from"><option value="">De ningún apartado</option>${Object.entries(SOBRES).map(([k,s])=>`<option value="${k}" ${k===def?'selected':''}>${s.e} ${s.n} (${fmt0(sobreBal(k))})</option>`).join('')}</select>`;
+function takeFromSobre(k,a,date,note,ref){if(!k)return;const bal=sobreBal(k);if(bal<=0)return;add('moves',{id:uid(),date,sobre:k,amount:-Math.min(a,bal),note,ref})}
+
+function pagarAuto(n){
+  const p=SCHEDULE[n-1],amt=payAmt(p);
+  openDlg(`<form><h2 style="margin-top:0">Pago #${n} · ${fmt(amt)}</h2>
+   <label>Fecha en que pagaste</label><input type="date" name="date" value="${today()}">
+   <label>Monto pagado</label><input type="number" step="0.01" name="amount" value="${amt.toFixed(2)}">
+   <label class="check"><input type="checkbox" name="gasto" checked> Registrar como gasto del mes</label>
+   ${sobreSelect(sobreBal('auto')>0?'auto':'')}
+   ${p[1]<today()?`<div class="banner bad" style="margin-top:10px">Pago tardío: puede haber 10% de penalización. Ajusta el monto si te cobraron más.</div>`:''}${dlgBtns()}</form>`,d=>{
+    mset('carPaid',n,d.date);const a=+d.amount||amt,id=uid();
+    if(d.gasto)add('entries',{id,date:d.date,type:'gasto',cat:'auto',amount:a,note:`Mensualidad #${n}`,from:d.from||''});
+    takeFromSobre(d.from,a,d.date,`Pago mensualidad #${n}`,d.gasto?id:'');toast('¡Pago registrado! 🎉');
+  });
+}
+function pagarBill(id){
+  const b=S.bills.find(x=>x.id===id),o=occ(b);
+  openDlg(`<form><h2 style="margin-top:0">Pagar ${esc(b.name)}</h2>
+   <label>Monto pagado</label><input type="number" step="0.01" name="amount" value="${b.amount}">
+   <label>Fecha</label><input type="date" name="date" value="${today()}">${sobreSelect(sobreBal('fijos')>0?'fijos':'')}${dlgBtns()}</form>`,d=>{
+    const a=+d.amount||0,eid=uid();mset('billPaid',o.key,a);
+    add('entries',{id:eid,date:d.date,type:'gasto',cat:b.type==='seguro'?'seguro':'servicios',amount:a,note:b.name,from:d.from||''});
+    takeFromSobre(d.from,a,d.date,'Pago '+b.name,eid);toast('Pago registrado');
+  });
+}
+function pagarDebt(id){
+  const d=S.debts.find(x=>x.id===id),o=occ(d),P=debtPlan(),rec=P.alloc[id]||debtMin(d);
+  const q=[['Mínimo',debtMin(d)],['No generar intereses',+d.pagoNoInt||0],['Recomendado',rec],['Todo',+d.saldo]].filter(x=>x[1]>0);
+  openDlg(`<form><h2 style="margin-top:0">Pagar ${esc(d.name)}</h2><div class="muted">Debes ${fmt(d.saldo)}</div>
+   <label>Monto</label><input type="number" step="0.01" name="amount" id="payAmt" value="${rec.toFixed(2)}" required>
+   <div class="qbtns">${q.map(([n,v])=>`<button type="button" class="btn sm" onclick="document.getElementById('payAmt').value='${v.toFixed(2)}'">${n} ${fmt0(v)}</button>`).join('')}</div>
+   <label>Fecha</label><input type="date" name="date" value="${today()}">
+   ${sobreSelect(sobreBal('fijos')>0?'fijos':sobreBal('capital')>0?'capital':'')}
+   ${o?`<label class="check"><input type="checkbox" name="mes" checked> Ya cubrí el pago de ${fmonth(o.key.split('|')[1])} (quita el recordatorio)</label>`:''}${dlgBtns()}</form>`,f=>{
+    const a=+f.amount||0,eid=uid();d.saldo=Math.max(0,(+d.saldo||0)-a);upd('debts',d);
+    add('entries',{id:eid,date:f.date,type:'pago',debt:d.id,amount:a,note:d.name,from:f.from||''});
+    if(f.mes&&o)mset('billPaid',o.key,a);
+    takeFromSobre(f.from,a,f.date,'Pago '+d.name,eid);toast(d.saldo?`Te quedan ${fmt0(d.saldo)} en ${d.name}`:`🎉 ¡${d.name} liquidada!`);
+  });
+}
+function editDebt(id){
+  const d=S.debts.find(x=>x.id===id)||{name:'',type:'tdc',saldo:'',limite:'',tasa:'',pagoMin:'',pagoNoInt:'',day:''};
+  openDlg(`<form><h2 style="margin-top:0">${id?'Editar':'Nueva'} deuda</h2>
+   <label>Nombre</label><input name="name" value="${esc(d.name)}" placeholder="Ej. BBVA Azul, préstamo Coppel…" required>
+   <label>Tipo</label><select name="type"><option value="tdc" ${d.type==='tdc'?'selected':''}>Tarjeta de crédito</option><option value="prestamo" ${d.type==='prestamo'?'selected':''}>Préstamo</option></select>
+   <div class="grid2"><div><label>Saldo que debes</label><input name="saldo" type="number" step="0.01" inputmode="decimal" value="${d.saldo||''}"></div>
+   <div><label>Día límite de pago</label><input name="day" type="number" min="0" max="31" value="${d.day||''}" placeholder="1-31"></div>
+   <div><label>Pago mínimo / mensualidad</label><input name="pagoMin" type="number" step="0.01" inputmode="decimal" value="${d.pagoMin||''}"></div>
+   <div><label>Pago p/ no generar intereses</label><input name="pagoNoInt" type="number" step="0.01" inputmode="decimal" value="${d.pagoNoInt||''}"></div>
+   <div><label>Tasa anual % (opcional)</label><input name="tasa" type="number" step="0.01" inputmode="decimal" value="${d.tasa||''}"></div>
+   <div><label>Límite de crédito (opcional)</label><input name="limite" type="number" step="1" inputmode="decimal" value="${d.limite||''}"></div></div>
+   <div class="hint">Todo viene en tu estado de cuenta o en la app del banco. La tasa sirve para saber cuál te cobra más.</div>
+   ${dlgBtns(id?`<button type="button" class="btn danger" id="delDebtBtn">🗑️</button>`:'')}</form>`,f=>{
+    const o={id:id||uid(),name:f.name,type:f.type,saldo:+f.saldo||0,day:Math.min(31,+f.day||0),pagoMin:+f.pagoMin||0,pagoNoInt:+f.pagoNoInt||0,tasa:+f.tasa||0,limite:+f.limite||0};
+    if(o.day&&(!d.desde||+d.day!==o.day))o.desde=startMonthFor(o.day);else if(d.desde)o.desde=d.desde;
+    if(id){Object.assign(d,o);upd('debts',d)}else add('debts',o);
+  });
+  const del=document.getElementById('delDebtBtn');if(del)del.onclick=()=>{if(confirm(`¿Eliminar ${d.name}? (los pagos ya registrados se quedan en tus movimientos)`)){rem('debts',id);dlg.close();save();render()}};
+}
+function editBill(id,preset){
+  const b=S.bills.find(x=>x.id===id)||Object.assign({name:'',type:'fijo',day:'',amount:'',freq:'m',desde:''},preset);
+  openDlg(`<form><h2 style="margin-top:0">${id?'Editar':'Nuevo'} ${b.type==='seguro'?'seguro':'pago fijo'}</h2>
+   <label>Nombre</label><input name="name" value="${esc(b.name)}" placeholder="Ej. Telcel, renta, seguro de plataforma…" required>
+   <label>Tipo</label><select name="type"><option value="fijo" ${b.type!=='seguro'?'selected':''}>Pago fijo / servicio</option><option value="seguro" ${b.type==='seguro'?'selected':''}>Seguro</option></select>
+   <div class="grid2"><div><label>Día de pago</label><input name="day" type="number" min="1" max="31" value="${b.day}" required></div>
+   <div><label>Monto</label><input name="amount" type="number" step="0.01" value="${b.amount}" required></div>
+   <div><label>Frecuencia</label><select name="freq"><option value="m" ${!b.freq||b.freq==='m'?'selected':''}>Mensual</option><option value="q" ${b.freq==='q'?'selected':''}>Quincenal</option><option value="a" ${b.freq==='a'?'selected':''}>Anual</option></select></div>
+   <div><label>Empieza en</label><input name="desde" type="month" value="${b.desde||''}"></div></div>
+   <div class="hint">Quincenal: pon el primer día (ej. 15 → se cobra el 15 y el 30; 1 → el 1 y el 16). Monto = lo de cada quincena.</div>
+   <div class="hint">"Empieza en" sirve para pagos futuros (ej. el seguro de plataforma desde feb–mar 2027). Si es anual, ese mes se repite cada año.</div>
+   ${dlgBtns(id?`<button type="button" class="btn danger" id="delBillBtn">🗑️</button>`:'')}</form>`,f=>{
+    const day=Math.min(31,+f.day||1),o={id:id||uid(),name:f.name,type:f.type,day,amount:+f.amount||0,freq:f.freq,desde:f.desde||(f.freq==='a'?startMonthFor(day):(id?b.desde:startMonthFor(day)))};
+    if(id){Object.assign(b,o);upd('bills',b)}else add('bills',o);
+  });
+  const del=document.getElementById('delBillBtn');if(del)del.onclick=()=>{if(confirm('¿Eliminar este pago?')){rem('bills',id);dlg.close();save();render()}};
+}
+function ajSobre(k){
+  openDlg(`<form><h2 style="margin-top:0">${SOBRES[k].e} ${SOBRES[k].n}</h2><div class="muted">Saldo actual ${fmt(sobreBal(k))}</div>
+   <label>Movimiento</label><select name="dir"><option value="1">Depositar (+)</option><option value="-1">Retirar (−)</option><option value="0">Fijar saldo exacto</option></select>
+   <label>Monto</label><input type="number" step="0.01" name="amount" required><label>Nota</label><input name="note" placeholder="Opcional">${dlgBtns()}</form>`,d=>{
+    let a=+d.amount||0;if(d.dir==='0')a=a-sobreBal(k);else a*=+d.dir;
+    add('moves',{id:uid(),date:today(),sobre:k,amount:a,note:d.note||(d.dir==='0'?'Ajuste de saldo':'')});
+  });
+}
+function prepay(){
+  openDlg(`<form><h2 style="margin-top:0">Abono a capital realizado</h2>
+   <label>Monto abonado</label><input type="number" step="0.01" name="amount" value="${Math.max(0,Math.round(sobreBal('capital')))||''}" required>
+   <label>Fecha</label><input type="date" name="date" value="${today()}">${sobreSelect('capital')}${dlgBtns()}</form>`,d=>{
+    const a=+d.amount||0,id=uid();add('prepay',{id,date:d.date,amount:a});takeFromSobre(d.from,a,d.date,'Abono a capital auto',id);toast('¡Abono registrado! Menos intereses 💪');
+  });
+}
+function editReal(wk){
+  const w=weekData(wk);
+  openDlg(`<form><h2 style="margin-top:0">Depósito real de ML</h2><div class="muted">Semana ${fdateS(wk)} · esperado ${fmt(w.esperado)}</div>
+   <label>Monto que te depositaron</label><input type="number" step="0.01" name="real" value="${w.real??''}" placeholder="Vacío = usar el esperado">${dlgBtns()}</form>`,d=>{
+    if(d.real==='')mdel('weekReal',wk);else mset('weekReal',wk,+d.real);
+  });
+}
+
+/* ================== EXPORTAR ================== */
+function download(name,content,type){
+  const blob=new Blob([content],{type}),f=new File([blob],name,{type});
+  if(navigator.canShare&&navigator.canShare({files:[f]})&&/iphone|ipad|android/i.test(navigator.userAgent)){navigator.share({files:[f],title:name}).catch(()=>{});return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+}
+function exportICS(){
+  const st=new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z',D=s=>s.replace(/-/g,'');
+  let s='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//FinanzasRuta//ES\r\nCALSCALE:GREGORIAN\r\n';
+  const ev=(uid,date,title,desc,rrule,alarms)=>{s+=`BEGIN:VEVENT\r\nUID:${uid}@finanzasruta\r\nDTSTAMP:${st}\r\nDTSTART;VALUE=DATE:${D(date)}\r\nDTEND;VALUE=DATE:${D(addDays(date,1))}\r\n${rrule?rrule+'\r\n':''}SUMMARY:${title}\r\n${desc?'DESCRIPTION:'+desc+'\r\n':''}${alarms.map(([t,m])=>`BEGIN:VALARM\r\nACTION:DISPLAY\r\nDESCRIPTION:${m}\r\nTRIGGER:${t}\r\nEND:VALARM\r\n`).join('')}END:VEVENT\r\n`};
+  SCHEDULE.filter(p=>!S.carPaid[p[0]]).forEach(p=>ev('auto-pago-'+p[0],p[1],`🚗 Mensualidad auto #${p[0]} - ${fmt(payAmt(p))}`,`Pago ${p[0]} de 60. Penalización 10% por pago tardío.`,'',[['-P3DT0H','Mensualidad en 3 días'],['-PT15H','Mensualidad mañana']]));
+  [...S.debts.filter(debtActive),...S.bills].forEach(it=>{const o=occ(it);if(!o)return;
+    ev('pago-'+it.id,o.date,`${it.type==='tdc'?'💳':it.type==='seguro'?'🛡️':'📌'} Pagar ${it.name}`,'',it.freq==='a'?'RRULE:FREQ=YEARLY':it.freq==='q'?`RRULE:FREQ=MONTHLY;BYMONTHDAY=${quinDays(it.day)[0]},${Math.min(quinDays(it.day)[1],28)}`:`RRULE:FREQ=MONTHLY;BYMONTHDAY=${Math.min(it.day,28)}`,[['-P2D','Pago en 2 días'],['-PT15H','Pago mañana']])});
+  download('pagos.ics',s+'END:VCALENDAR\r\n','text/calendar');
+}
+function exportCSV(){
+  const rows=[['Fecha','Tipo','Categoría','Monto','Con IVA','Km','Paquetes','Litros','Nota','Tarjeta','Apartado']];
+  S.entries.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>rows.push([e.date,e.type,e.type==='gasto'?(GASTO_CATS[e.cat]||e.cat).replace(/^\S+\s/,''):e.type==='pago'?debtName(e.debt)||'':'',e.amount,e.type==='ruta'?entryValue(e).toFixed(2):'',e.km||'',e.paq||'',e.lts||'',e.note||'',e.card?debtName(e.card)||'':'',e.from?SOBRES[e.from].n:'']));
+  download('movimientos.csv','﻿'+rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n'),'text/csv');
+}
+
+/* ================== EVENTOS ================== */
+document.getElementById('nav').onclick=e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.tab)};
+function delEntry(id){
+  const e=S.entries.find(x=>x.id===id);if(!e)return;
+  const d=S.debts.find(x=>x.id===(e.card||e.debt));
+  if(d&&e.card){d.saldo=Math.max(0,(+d.saldo||0)-e.amount);upd('debts',d)}
+  if(d&&e.type==='pago'){d.saldo=(+d.saldo||0)+e.amount;upd('debts',d)}
+  S.moves.filter(m=>m.ref===id).forEach(m=>rem('moves',m.id));
+  rem('entries',id);
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b||b.tagName==='SELECT')return;const a=b.dataset.act,d=b.dataset;
+  const acts={
+    tab:()=>setTab(d.t),tipo:()=>{nuevoTipo=d.k;render()},cat:()=>{gastoCat=d.k;render()},
+    pagarAuto:()=>pagarAuto(+d.n),
+    unpay:()=>{if(confirm(`¿Desmarcar pago #${d.n}? (no borra el gasto registrado)`)){mdel('carPaid',d.n);save();render()}},
+    pagarBill:()=>pagarBill(d.id),editBill:()=>editBill(d.id),
+    addSeguro:()=>editBill(null,{name:'Seguro de plataforma',type:'seguro',freq:'m',desde:'2027-02'}),
+    pagarDebt:()=>pagarDebt(d.id),editDebt:()=>editDebt(d.id),
+    strat:()=>{S.settings.strategy=d.k;S.meta.settings=now();save();render()},
+    delEntry:()=>{if(confirm('¿Borrar este registro?')){delEntry(d.id);save();render()}},
+    delMove:()=>{if(confirm('¿Borrar este movimiento del apartado?')){rem('moves',d.id);save();render()}},
+    mes:()=>{const[y,m]=movMonth.split('-').map(Number),dt=new Date(y,m-1+(+d.d),1);movMonth=`${dt.getFullYear()}-${pad(dt.getMonth()+1)}`;render()},
+    movf:()=>{movFilter=d.k;render()},real:()=>editReal(d.wk),aw:()=>{aptWeek=addDays(aptWeek,+d.d);render()},
+    aplicar:()=>{const note='Apartado semana '+fdateS(d.wk);if(S.moves.some(m=>m.note===note)&&!confirm('Ya registraste los apartados de esta semana. ¿Registrarlos otra vez?'))return;
+      recomendar(d.wk).items.filter(i=>i.v>0.5).forEach(i=>add('moves',{id:uid(),date:today(),sobre:i.k,amount:Math.round(i.v),note}));save();render();toast('Apartados registrados 🐷')},
+    ajSobre:()=>ajSobre(d.k),prepay,ics:exportICS,csv:exportCSV,
+    export:()=>download(`respaldo-finanzas-${today()}.json`,JSON.stringify(S),'application/json'),
+    reset:()=>{if(confirm('¿Borrar TODOS los datos de este celular? Descarga un respaldo primero.')&&confirm('¿Seguro?')){const sc=SC;SC=null;saveSC();S=normalize(null);localStorage.setItem(KEY,JSON.stringify(S));if(sc&&confirm('¿También desconectar la sincronización? (si no, al sincronizar volverán tus datos de la nube)')){}else if(sc){SC=sc;saveSC()}setTab('inicio')}},
+    syncNow:()=>{if(SC)sync(true);else setTab('ajustes')},
+    copySQL:()=>copyText(SQL,'Código SQL copiado'),
+    copyKey:()=>copyText(encKey({u:SC.u,k:SC.k,c:SC.c}),'Clave copiada: pégala en tu otro celular'),
+    unsync:()=>{if(confirm('¿Desconectar este celular? Tus datos se quedan aquí, pero ya no se sincronizarán.')){SC=null;saveSC();render()}},
+    activar:()=>{const raw=document.getElementById('sbUrl').value+'\n'+document.getElementById('sbKey').value;
+      // acepta el bloque completo de .env.local o cada valor por separado
+      const u=((raw.match(/https:\/\/[a-z0-9-]+\.supabase\.co/i)||[])[0]||document.getElementById('sbUrl').value).trim();
+      const k=((raw.match(/(sb_publishable_[A-Za-z0-9_-]+|eyJ[A-Za-z0-9._-]+)/)||[])[0]||document.getElementById('sbKey').value).trim();
+      if(/sb_secret_|service_role/.test(raw))return alert('Esa es la clave secreta de administrador. Usa la "publishable" o "anon".');if(!/^https:\/\/.+/.test(u)||k.length<20)return alert('Revisa la URL y la clave.');activarSync({u,k,c:newCode()},'☁️ ¡Sincronización activada! Ahora copia la clave al otro celular')},
+    unirme:()=>{let o;try{o=decKey(document.getElementById('joinKey').value);if(!o.u||!o.k||!o.c)throw 0}catch(_){return alert('Esa clave no es válida.')}activarSync(o,'☁️ ¡Celular unido! Datos combinados')}
+  };
+  acts[a]&&acts[a]();
+});
+document.addEventListener('submit',e=>{
+  if(e.target.id==='fNuevo'){e.preventDefault();const d=Object.fromEntries(new FormData(e.target));
+    const en={id:uid(),date:d.date,type:nuevoTipo,amount:+d.amount};
+    if(!(en.amount>0))return toast('Escribe un monto');
+    if(nuevoTipo==='ruta'){if(d.km)en.km=+d.km;if(d.paq)en.paq=+d.paq}
+    if(d.note)en.note=d.note;
+    if(nuevoTipo==='gasto'){en.cat=gastoCat;if(d.lts)en.lts=+d.lts;
+      if(d.card){en.card=d.card;const c=S.debts.find(x=>x.id===d.card);c.saldo=(+c.saldo||0)+en.amount;upd('debts',c)}
+      else if(d.from){en.from=d.from;takeFromSobre(d.from,en.amount,d.date,GASTO_CATS[gastoCat].replace(/^\S+\s/,'')+(d.note?' · '+d.note:''),en.id)}}
+    add('entries',en);save();render();toast('Guardado ✔');
+  }
+  if(e.target.id==='fSet'){e.preventDefault();const d=Object.fromEntries(new FormData(e.target));for(const k in d)S.settings[k]=+d[k];S.meta.settings=now();save();toast('Ajustes guardados');render()}
+});
+document.addEventListener('change',e=>{
+  if(e.target.id==='segSel'){S.settings.segCancelFrom=+e.target.value;S.meta.settings=now();save();render();toast(S.settings.segCancelFrom?'Mensualidades ajustadas sin seguro':'Seguro original activo')}
+  if(e.target.id==='impFile'){const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const o=JSON.parse(t);if(!o.entries)throw 0;if(confirm('¿Combinar este respaldo con tus datos actuales?')){S=merge(S,o);save();setTab('inicio');toast('Respaldo restaurado')}}catch(_){alert('Archivo no válido')}})}
+});
+document.addEventListener('focusout',()=>setTimeout(()=>{if(pendingRender&&!dlg.open&&!['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))render()},300));
+window.addEventListener('resize',()=>{if(TAB==='inicio')drawChart()});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){sync();if(TAB==='inicio')softRender()}});
+setInterval(()=>{if(document.visibilityState==='visible')sync()},60000);
+window.addEventListener('online',()=>sync());
+
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js');
+if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
+render();sync();
+</script>
+</body>
+</html>
