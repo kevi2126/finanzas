@@ -23,7 +23,7 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--t1);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
 body{padding:env(safe-area-inset-top) 0 calc(72px + env(safe-area-inset-bottom))}
-header{padding:14px 16px 4px;display:flex;justify-content:space-between;align-items:center}
+header{padding:14px 16px 4px;display:flex;justify-content:space-between;align-items:center;max-width:640px;margin:0 auto}
 header h1{font-size:20px;margin:0}
 header small{color:var(--t3)}
 #hdrRight{display:flex;gap:6px;align-items:center}
@@ -148,11 +148,13 @@ function normalize(s){
   ARR.forEach(k=>{if(!Array.isArray(o[k]))o[k]=[]});MAPS.concat(['meta','del']).forEach(k=>{if(!o[k]||typeof o[k]!=='object')o[k]={}});
   return o;
 }
-const seedBills=[{id:'tel-principal',name:'Teléfono principal',type:'fijo',day:15,amount:135,freq:'q',desde:''},
-  {id:'tel-trabajo',name:'Teléfono trabajo',type:'fijo',day:15,amount:230,freq:'m',desde:''}];
+const seedBills=[{id:'tel-principal',name:'Teléfono principal',type:'fijo',day:3,amount:135,freq:'n',cada:15,fecha:'2026-12-03',desde:''},
+  {id:'tel-trabajo',name:'Teléfono trabajo',type:'fijo',day:15,amount:230,freq:'n',cada:30,fecha:'2026-11-15',desde:'',pausado:true}];
 function load(){let s=null;try{s=JSON.parse(localStorage.getItem(KEY))}catch(e){}
   const o=normalize(s);
   if(!o.seedTel){seedBills.forEach(b=>{if(!o.bills.some(x=>x.id===b.id)&&!o.del['bills:'+b.id])o.bills.push({...b})});o.seedTel=true}
+  if(!o.seedTel2){ // corrige teléfonos: principal cada 15 días desde 3 dic; trabajo en pausa
+    seedBills.forEach(sb=>{const b=o.bills.find(x=>x.id===sb.id);if(b){Object.assign(b,sb);o.meta['bills:'+b.id]=Date.now()}});o.seedTel2=true}
   return o}
 let S=load();
 function save(){localStorage.setItem(KEY,JSON.stringify(S));scheduleSync()}
@@ -237,6 +239,9 @@ function simular(B,V){const r=CAR_INFO.tasa/100/12;let n=0,int=0;while(B>0.01&&n
 // ---- Pagos fijos y deudas: fechas ----
 function startMonthFor(day){const d=new Date();return d.getDate()>day?iso(new Date(d.getFullYear(),d.getMonth()+1,1)).slice(0,7):today().slice(0,7)}
 function occ(it){
+  if(it.pausado)return null;
+  if(it.freq==='n'){if(!it.fecha)return null;const t=today(),n=Math.max(1,+it.cada||15);let d=it.fecha;
+    for(let k=0;k<400;k++){const key=`${it.id}|${d}`;if(!(key in S.billPaid))return {date:d,days:daysBetween(t,d),key};d=addDays(d,n)}return null}
   if(!it.day)return null;const t=today();let d=new Date();d=new Date(d.getFullYear(),d.getMonth(),1);
   if(it.desde){const s=pd(it.desde+'-01');if(s>d)d=s}
   for(let k=0;k<14;k++){const y=d.getFullYear(),mo=d.getMonth(),last=new Date(y,mo+1,0).getDate();
@@ -248,14 +253,15 @@ function occ(it){
   return null;
 }
 const quinDays=day=>{const a=((+day-1)%15)+1;return [a,a+15]}; // quincenal: ej. 15 y 30, o 1 y 16
-const FREQ={m:'mensual',q:'quincenal',a:'anual'};
+const FREQ={m:'mensual',q:'quincenal (días fijos)',a:'anual',n:'cada X días'};
+const freqTxt=b=>b.freq==='n'?`cada ${b.cada||15} días`:FREQ[b.freq||'m']+(b.freq==='q'?` (días ${quinDays(b.day).join(' y ')})`:'')+` · día ${b.day}`;
 const debtActive=d=>(+d.saldo||0)>0.5;
 const debtMin=d=>Math.min(+d.saldo||0,+d.pagoMin||0);
 function obligaciones(days=31){
   return [...S.bills.map(b=>({kind:'bill',it:b,amount:+b.amount||0})),...S.debts.filter(debtActive).map(d=>({kind:'debt',it:d,amount:debtMin(d)}))]
     .map(x=>({...x,o:occ(x.it)})).filter(x=>x.o&&x.o.days<=days).sort((a,b)=>a.o.days-b.o.days);
 }
-const billMensual=b=>(!b.desde||b.desde<=today().slice(0,7))?(b.freq==='a'?(+b.amount||0)/12:b.freq==='q'?(+b.amount||0)*2:(+b.amount||0)):0;
+const billMensual=b=>b.pausado?0:b.freq==='n'?(+b.amount||0)*30/Math.max(1,+b.cada||15):(!b.desde||b.desde<=today().slice(0,7))?(b.freq==='a'?(+b.amount||0)/12:b.freq==='q'?(+b.amount||0)*2:(+b.amount||0)):0;
 // ---- Promedios ----
 function lastWeeks(n,cur=false){const out=[];let wk=weekKey(today());if(!cur)wk=addDays(wk,-7);for(let i=0;i<n;i++){out.push(weekData(wk));wk=addDays(wk,-7)}return out}
 function avgWeekIncome(){const w=lastWeeks(4).filter(x=>x.ingreso>0);return w.length?sum(w,x=>x.ingreso)/w.length:0}
@@ -347,11 +353,12 @@ function render(){
   pendingRender=false;
   const map={inicio:vInicio,movs:vMovs,nuevo:vNuevo,auto:vAuto,apartados:vApartados,deudas:vDeudas,ajustes:vAjustes};
   document.getElementById('view').innerHTML=map[TAB]();
-  document.getElementById('hdrPill').innerHTML=TAB==='ajustes'?'':pill(salud().general);
+  document.getElementById('hdrPill').innerHTML=TAB==='ajustes'||!hasData()?'':pill(salud().general);
   updSyncBadge();
   if(TAB==='inicio')drawChart();
   if(TAB==='auto')initSim();
 }
+const hasData=()=>S.entries.length>0||S.moves.length>0||S.debts.some(debtActive);
 function softRender(){if(dlg.open||['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))pendingRender=true;else render()}
 function setHeader(t,s){document.getElementById('title').textContent=t;document.getElementById('subtitle').textContent=s||''}
 
@@ -363,7 +370,8 @@ function vInicio(){
   setHeader('Inicio',fdate(today()));
   const s=salud(),t=today(),np=nextPay(),md=monthData(ym(t)),wk=weekData(weekKey(t));
   const g={good:['Buena administración','Vas bien: sigue apartando cada semana.'],warn:['Administración regular','Hay puntos que atender (revisa abajo).'],bad:['Mala administración / capital bajo','Atiende lo que está en rojo cuanto antes.']}[s.general];
-  let h=`<div class="banner ${s.general}"><b>${LBL[s.general].split(' ')[0]} ${g[0]}</b><div class="muted" style="color:var(--t2)">${g[1]} Puntaje ${(s.score*100).toFixed(0)}/100</div></div>`;
+  let h=!hasData()?`<div class="banner good" style="border-color:var(--inc);background:rgba(57,135,229,.12)"><b>👋 ¡Bienvenido!</b><div class="muted" style="color:var(--t2)">Para empezar: 1) captura el saldo, pago mínimo y día de pago de tus TDC en <b>Deudas</b>; 2) registra tus rutas cada día con <b>+</b>; 3) si ya tienes dinero guardado, ponlo en <b>Apartados → ± Ajustar</b>. Tu semáforo aparece cuando haya datos.</div></div>`
+    :`<div class="banner ${s.general}"><b>${LBL[s.general].split(' ')[0]} ${g[0]}</b><div class="muted" style="color:var(--t2)">${g[1]} Puntaje ${(s.score*100).toFixed(0)}/100</div></div>`;
   if(np){const dd=daysBetween(t,np[1]),amt=payAmt(np),l=dd<0?'bad':dd<=S.settings.remindDays?'warn':'good',b=sobreBal('auto');
     h+=`<div class="card"><h2>🚗 Próxima mensualidad ${pill(l,dd<0?`⛔ Vencido ${-dd} d`:dd===0?'⚠️ Hoy':`${l==='warn'?'⚠️':'📅'} en ${dd} días`)}</h2>
     <div class="big">${fmt(amt)}</div><div class="muted">Pago #${np[0]} de 60 · vence ${fdate(np[1])}${segOn(np)?'':' · sin seguro financiado'}</div>
@@ -551,7 +559,8 @@ function vAjustes(){
   setHeader('Ajustes','');
   const st=S.settings;
   let h=vSync();
-  h+=`<div class="card"><h2>📌 Pagos fijos y seguros</h2>${S.bills.length?S.bills.map(b=>{const o=occ(b);return `<div class="row"><div class="l"><div>${b.type==='seguro'?'🛡️':'📌'} ${esc(b.name)}</div><div class="muted">Día ${b.day} · ${fmt0(b.amount)} ${FREQ[b.freq||'m']}${b.freq==='q'?` (días ${quinDays(b.day).join(' y ')})`:''}${b.desde?' · desde '+fmonth(b.desde):''}${o?` · próximo ${fdateS(o.date)}`:''}</div></div><div style="display:flex;gap:6px"><button class="btn sm" data-act="editBill" data-id="${b.id}">✏️</button></div></div>`}).join(''):'<div class="muted">Celular, internet, renta, seguro de plataforma… (las TDC van en la pestaña Deudas).</div>'}
+  h+=`<div class="card"><h2>📌 Pagos fijos y seguros</h2>${S.bills.length?S.bills.map(b=>{const o=occ(b);return `<div class="row"><div class="l"><div>${b.type==='seguro'?'🛡️':'📌'} ${esc(b.name)} ${b.pausado?'<span class="pill warn">⏸️ En pausa</span>':''}</div><div class="muted">${fmt0(b.amount)} ${freqTxt(b)}${b.desde&&b.freq!=='n'?' · desde '+fmonth(b.desde):''}${o?` · próximo ${o.days<0?'<span class="neg">vencido '+fdateS(o.date)+'</span>':fdateS(o.date)}`:''}</div></div>
+     <div style="display:flex;gap:6px"><button class="btn sm" data-act="pagarBill" data-id="${b.id}">${b.pausado?'Recargar':'Pagar'}</button><button class="btn sm" data-act="pausa" data-id="${b.id}" title="${b.pausado?'Reanudar':'Pausar'}">${b.pausado?'▶️':'⏸️'}</button><button class="btn sm" data-act="editBill" data-id="${b.id}">✏️</button></div></div>`}).join(''):'<div class="muted">Celular, internet, renta, seguro de plataforma… (las TDC van en la pestaña Deudas).</div>'}
    <button class="btn full" data-act="editBill">+ Agregar pago fijo</button></div>`;
   h+=`<div class="card"><form id="fSet"><h2>🚚 Mercado Libre</h2>
    <div class="grid2"><div><label>IVA trasladado %</label><input name="ivaPct" type="number" step="0.01" value="${st.ivaPct}"></div>
@@ -665,15 +674,28 @@ function pagarAuto(n){
   });
 }
 function pagarBill(id){
-  const b=S.bills.find(x=>x.id===id),o=occ(b);
-  openDlg(`<form><h2 style="margin-top:0">Pagar ${esc(b.name)}</h2>
+  const b=S.bills.find(x=>x.id===id),o=occ(b),n=+b.cada||15;
+  openDlg(`<form><h2 style="margin-top:0">${b.pausado?'Recargar':'Pagar'} ${esc(b.name)}</h2>
    <label>Monto pagado</label><input type="number" step="0.01" name="amount" value="${b.amount}">
-   <label>Fecha</label><input type="date" name="date" value="${today()}">${sobreSelect(sobreBal('fijos')>0?'fijos':'')}${dlgBtns()}</form>`,d=>{
-    const a=+d.amount||0,eid=uid();mset('billPaid',o.key,a);
-    add('entries',{id:eid,date:d.date,type:'gasto',cat:b.type==='seguro'?'seguro':'servicios',amount:a,note:b.name,from:d.from||''});
-    takeFromSobre(d.from,a,d.date,'Pago '+b.name,eid);toast('Pago registrado');
+   <label>Fecha</label><input type="date" name="date" value="${today()}">
+   ${cardSelect(b.card||'')}
+   <div id="sobreBox">${sobreSelect(sobreBal('fijos')>0?'fijos':'')}</div>
+   ${b.freq==='n'?`<label class="check"><input type="checkbox" name="reinicia" ${b.pausado||(o&&o.days<0)?'checked':''}> El siguiente pago será ${n} días después de esta fecha</label>`:''}
+   ${b.pausado?'<div class="hint">Al registrar la recarga se quita la pausa y vuelve a recordártelo.</div>':''}${dlgBtns()}</form>`,d=>{
+    const a=+d.amount||0,eid=uid();
+    if(b.freq==='n'&&(d.reinicia||!o)){b.fecha=addDays(d.date,n);b.pausado=false;upd('bills',b)}
+    else if(o)mset('billPaid',o.key,a);
+    if(b.pausado){b.pausado=false;upd('bills',b)}
+    if((b.card||'')!==(d.card||'')){b.card=d.card||'';upd('bills',b)} // recuerda con qué lo pagas
+    const en={id:eid,date:d.date,type:'gasto',cat:b.type==='seguro'?'seguro':'servicios',amount:a,note:b.name,from:''};
+    if(d.card){en.card=d.card;const c=S.debts.find(x=>x.id===d.card);if(c){c.saldo=(+c.saldo||0)+a;upd('debts',c)}}
+    else{en.from=d.from||'';takeFromSobre(d.from,a,d.date,'Pago '+b.name,eid)}
+    add('entries',en);toast(d.card?`Registrado con ${debtName(d.card)} (se sumó a su deuda)`:'Pago registrado');
   });
+  wireCard();
 }
+const cardSelect=def=>`<label>¿Con qué pagaste?</label><select name="card" id="cardSel"><option value="">💵 Mi dinero (efectivo / débito)</option>${S.debts.filter(d=>d.type==='tdc').map(d=>`<option value="${d.id}" ${d.id===def?'selected':''}>💳 ${esc(d.name)} (se suma a su deuda)</option>`).join('')}</select>`;
+function wireCard(){const s=document.getElementById('cardSel'),bx=document.getElementById('sobreBox');if(!s||!bx)return;const t=()=>bx.style.display=s.value?'none':'';s.onchange=t;t()}
 function pagarDebt(id){
   const d=S.debts.find(x=>x.id===id),o=occ(d),P=debtPlan(),rec=P.alloc[id]||debtMin(d);
   const q=[['Mínimo',debtMin(d)],['No generar intereses',+d.pagoNoInt||0],['Recomendado',rec],['Todo',+d.saldo]].filter(x=>x[1]>0);
@@ -713,16 +735,22 @@ function editBill(id,preset){
   openDlg(`<form><h2 style="margin-top:0">${id?'Editar':'Nuevo'} ${b.type==='seguro'?'seguro':'pago fijo'}</h2>
    <label>Nombre</label><input name="name" value="${esc(b.name)}" placeholder="Ej. Telcel, renta, seguro de plataforma…" required>
    <label>Tipo</label><select name="type"><option value="fijo" ${b.type!=='seguro'?'selected':''}>Pago fijo / servicio</option><option value="seguro" ${b.type==='seguro'?'selected':''}>Seguro</option></select>
-   <div class="grid2"><div><label>Día de pago</label><input name="day" type="number" min="1" max="31" value="${b.day}" required></div>
-   <div><label>Monto</label><input name="amount" type="number" step="0.01" value="${b.amount}" required></div>
-   <div><label>Frecuencia</label><select name="freq"><option value="m" ${!b.freq||b.freq==='m'?'selected':''}>Mensual</option><option value="q" ${b.freq==='q'?'selected':''}>Quincenal</option><option value="a" ${b.freq==='a'?'selected':''}>Anual</option></select></div>
+   <div class="grid2"><div><label>Monto</label><input name="amount" type="number" step="0.01" value="${b.amount}" required></div>
+   <div><label>Frecuencia</label><select name="freq" id="freqSel"><option value="m" ${!b.freq||b.freq==='m'?'selected':''}>Mensual</option><option value="n" ${b.freq==='n'?'selected':''}>Cada X días</option><option value="q" ${b.freq==='q'?'selected':''}>Quincenal (15 y 30)</option><option value="a" ${b.freq==='a'?'selected':''}>Anual</option></select></div></div>
+   <div class="grid2 fN"><div><label>Próximo pago</label><input name="fecha" type="date" value="${b.fecha||today()}"></div>
+   <div><label>Cada cuántos días</label><input name="cada" type="number" min="1" value="${b.cada||15}"></div></div>
+   <div class="grid2 fD"><div><label>Día de pago</label><input name="day" type="number" min="1" max="31" value="${b.day}"></div>
    <div><label>Empieza en</label><input name="desde" type="month" value="${b.desde||''}"></div></div>
-   <div class="hint">Quincenal: pon el primer día (ej. 15 → se cobra el 15 y el 30; 1 → el 1 y el 16). Monto = lo de cada quincena.</div>
-   <div class="hint">"Empieza en" sirve para pagos futuros (ej. el seguro de plataforma desde feb–mar 2027). Si es anual, ese mes se repite cada año.</div>
+   <div class="hint fN">"Cada X días": recargas que vencen cada 15/30 días contados desde la última.</div>
+   <div class="hint fD">"Empieza en" sirve para pagos futuros (ej. el seguro de plataforma desde feb–mar 2027). Si es anual, ese mes se repite cada año.</div>
+   <label class="check"><input type="checkbox" name="pausado" ${b.pausado?'checked':''}> En pausa (no lo uso por ahora, no recordar)</label>
    ${dlgBtns(id?`<button type="button" class="btn danger" id="delBillBtn">🗑️</button>`:'')}</form>`,f=>{
-    const day=Math.min(31,+f.day||1),o={id:id||uid(),name:f.name,type:f.type,day,amount:+f.amount||0,freq:f.freq,desde:f.desde||(f.freq==='a'?startMonthFor(day):(id?b.desde:startMonthFor(day)))};
+    if(f.freq!=='n'&&!(+f.day))return alert('Pon el día de pago'),false;
+    const day=Math.min(31,+f.day||1),o={id:id||uid(),name:f.name,type:f.type,day,amount:+f.amount||0,freq:f.freq,pausado:!!f.pausado,
+      fecha:f.fecha||today(),cada:Math.max(1,+f.cada||15),desde:f.desde||(f.freq==='a'?startMonthFor(day):(id?b.desde:startMonthFor(day)))};
     if(id){Object.assign(b,o);upd('bills',b)}else add('bills',o);
   });
+  const fs=document.getElementById('freqSel'),tog=()=>{const n=fs.value==='n';dlg.querySelectorAll('.fN').forEach(e=>e.style.display=n?'':'none');dlg.querySelectorAll('.fD').forEach(e=>e.style.display=n?'none':'')};fs.onchange=tog;tog();
   const del=document.getElementById('delBillBtn');if(del)del.onclick=()=>{if(confirm('¿Eliminar este pago?')){rem('bills',id);dlg.close();save();render()}};
 }
 function ajSobre(k){
@@ -760,7 +788,7 @@ function exportICS(){
   const ev=(uid,date,title,desc,rrule,alarms)=>{s+=`BEGIN:VEVENT\r\nUID:${uid}@finanzasruta\r\nDTSTAMP:${st}\r\nDTSTART;VALUE=DATE:${D(date)}\r\nDTEND;VALUE=DATE:${D(addDays(date,1))}\r\n${rrule?rrule+'\r\n':''}SUMMARY:${title}\r\n${desc?'DESCRIPTION:'+desc+'\r\n':''}${alarms.map(([t,m])=>`BEGIN:VALARM\r\nACTION:DISPLAY\r\nDESCRIPTION:${m}\r\nTRIGGER:${t}\r\nEND:VALARM\r\n`).join('')}END:VEVENT\r\n`};
   SCHEDULE.filter(p=>!S.carPaid[p[0]]).forEach(p=>ev('auto-pago-'+p[0],p[1],`🚗 Mensualidad auto #${p[0]} - ${fmt(payAmt(p))}`,`Pago ${p[0]} de 60. Penalización 10% por pago tardío.`,'',[['-P3DT0H','Mensualidad en 3 días'],['-PT15H','Mensualidad mañana']]));
   [...S.debts.filter(debtActive),...S.bills].forEach(it=>{const o=occ(it);if(!o)return;
-    ev('pago-'+it.id,o.date,`${it.type==='tdc'?'💳':it.type==='seguro'?'🛡️':'📌'} Pagar ${it.name}`,'',it.freq==='a'?'RRULE:FREQ=YEARLY':it.freq==='q'?`RRULE:FREQ=MONTHLY;BYMONTHDAY=${quinDays(it.day)[0]},${Math.min(quinDays(it.day)[1],28)}`:`RRULE:FREQ=MONTHLY;BYMONTHDAY=${Math.min(it.day,28)}`,[['-P2D','Pago en 2 días'],['-PT15H','Pago mañana']])});
+    ev('pago-'+it.id,o.date,`${it.type==='tdc'?'💳':it.type==='seguro'?'🛡️':'📌'} Pagar ${it.name}`,'',it.freq==='n'?`RRULE:FREQ=DAILY;INTERVAL=${Math.max(1,+it.cada||15)}`:it.freq==='a'?'RRULE:FREQ=YEARLY':it.freq==='q'?`RRULE:FREQ=MONTHLY;BYMONTHDAY=${quinDays(it.day)[0]},${Math.min(quinDays(it.day)[1],28)}`:`RRULE:FREQ=MONTHLY;BYMONTHDAY=${Math.min(it.day,28)}`,[['-P2D','Pago en 2 días'],['-PT15H','Pago mañana']])});
   download('pagos.ics',s+'END:VCALENDAR\r\n','text/calendar');
 }
 function exportCSV(){
@@ -786,6 +814,7 @@ document.addEventListener('click',e=>{
     pagarAuto:()=>pagarAuto(+d.n),
     unpay:()=>{if(confirm(`¿Desmarcar pago #${d.n}? (no borra el gasto registrado)`)){mdel('carPaid',d.n);save();render()}},
     pagarBill:()=>pagarBill(d.id),editBill:()=>editBill(d.id),
+    pausa:()=>{const b=S.bills.find(x=>x.id===d.id);b.pausado=!b.pausado;upd('bills',b);save();render();toast(b.pausado?'⏸️ En pausa: no te lo recordará':'▶️ Reanudado')},
     addSeguro:()=>editBill(null,{name:'Seguro de plataforma',type:'seguro',freq:'m',desde:'2027-02'}),
     pagarDebt:()=>pagarDebt(d.id),editDebt:()=>editDebt(d.id),
     strat:()=>{S.settings.strategy=d.k;S.meta.settings=now();save();render()},
