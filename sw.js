@@ -1,5 +1,5 @@
 // Service worker: permite usar la app sin internet una vez instalada.
-const CACHE = 'finanzas-ruta-v4';
+const CACHE = 'finanzas-ruta-v5';
 const FILES = ['./', './index.html', './schedule.js', './manifest.webmanifest',
   './icon-192.png', './icon-512.png', './icon-maskable.png', './apple-touch-icon.png'];
 
@@ -10,7 +10,7 @@ self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
-// Red primero (para recibir actualizaciones), caché si no hay conexión.
+// Red primero (para recibir actualizaciones), cach?? si no hay conexi??n.
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   e.respondWith(

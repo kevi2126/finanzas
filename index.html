@@ -610,6 +610,18 @@ async function sync(manual){
 }
 function updSyncBadge(){const b=document.getElementById('syncBadge');if(!SC){b.textContent='';return}
   b.textContent=SC.state==='…'?'☁️ …':SC.err?'☁️⚠️':'☁️✓';b.title=SC.err||('Última sincronización '+(SC.last?new Date(SC.last).toLocaleTimeString('es-MX'):'—'))}
+// Lee URL y clave de Supabase aunque vengan con formato de WhatsApp, espacios o caracteres invisibles
+function parseSupa(raw){
+  const t=raw.normalize('NFKC').replace(/[\u200B-\u200F\u2028-\u202F\u2060\uFEFF]/g,'').replace(/[\u201C\u201D\u2018\u2019\x22\x27\x60*~]/g,'');
+  let u=(t.match(/https?:\/\/\s*([a-z0-9]{8,})\s*\.\s*supabase\s*\.\s*co/i)||[])[1];
+  if(!u){const m=t.match(/([a-z0-9]{15,})\.supabase\.co/i);u=m&&m[1]}
+  u=u?`https://${u.toLowerCase()}.supabase.co`:'';
+  let k=(t.match(/sb_publishable_[A-Za-z0-9_-]{10,}/)||t.match(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/)||[])[0];
+  if(!k){const m=t.match(/sb_?publishable_?([A-Za-z0-9_-]{10,})/i);if(m)k='sb_publishable_'+m[1]} // guiones bajos perdidos
+  if(!k){const line=t.split(/\n/).find(l=>/KEY\s*=/.test(l));if(line){const v=line.split('=').slice(1).join('=').replace(/\s+/g,'');if(v.length>=20)k=v}}
+  if(!k){const v=document.getElementById('sbKey').value.replace(/\s+/g,'');if(v.length>=20)k=v}
+  return {u,k:k||''};
+}
 const encKey=o=>'FR1.'+btoa(unescape(encodeURIComponent(JSON.stringify(o))));
 const decKey=s=>JSON.parse(decodeURIComponent(escape(atob(s.trim().replace(/^FR1\./,'')))));
 function newCode(){const a=new Uint8Array(24);crypto.getRandomValues(a);return [...a].map(x=>'abcdefghijkmnpqrstuvwxyz23456789'[x%32]).join('')}
@@ -832,10 +844,10 @@ document.addEventListener('click',e=>{
     copyKey:()=>copyText(encKey({u:SC.u,k:SC.k,c:SC.c}),'Clave copiada: pégala en tu otro celular'),
     unsync:()=>{if(confirm('¿Desconectar este celular? Tus datos se quedan aquí, pero ya no se sincronizarán.')){SC=null;saveSC();render()}},
     activar:()=>{const raw=document.getElementById('sbUrl').value+'\n'+document.getElementById('sbKey').value;
-      // acepta el bloque completo de .env.local o cada valor por separado
-      const u=((raw.match(/https:\/\/[a-z0-9-]+\.supabase\.co/i)||[])[0]||document.getElementById('sbUrl').value).trim();
-      const k=((raw.match(/(sb_publishable_[A-Za-z0-9_-]+|eyJ[A-Za-z0-9._-]+)/)||[])[0]||document.getElementById('sbKey').value).trim();
-      if(/sb_secret_|service_role/.test(raw))return alert('Esa es la clave secreta de administrador. Usa la "publishable" o "anon".');if(!/^https:\/\/.+/.test(u)||k.length<20)return alert('Revisa la URL y la clave.');activarSync({u,k,c:newCode()},'☁️ ¡Sincronización activada! Ahora copia la clave al otro celular')},
+      if(/sb_secret_|sbsecret|service_role/i.test(raw))return alert('Esa es la clave secreta de administrador. Usa la "publishable" o "anon".');
+      const {u,k}=parseSupa(raw);
+      if(!u||!k)return alert(`No pude leer ${!u&&!k?'la URL ni la clave':!u?'la URL':'la clave'}.\n\nURL detectada: ${u||'—'}\nClave detectada: ${k?k.slice(0,18)+'…':'—'}\n\nTip: copia cada valor por separado (pon la URL en el primer campo y la clave en el segundo), sin pasarlo por WhatsApp. Puedes entrar a supabase.com desde Safari → Project Settings → API Keys.`);
+      activarSync({u,k,c:newCode()},'☁️ ¡Sincronización activada! Ahora copia la clave al otro celular')},
     unirme:()=>{let o;try{o=decKey(document.getElementById('joinKey').value);if(!o.u||!o.k||!o.c)throw 0}catch(_){return alert('Esa clave no es válida.')}activarSync(o,'☁️ ¡Celular unido! Datos combinados')}
   };
   acts[a]&&acts[a]();
