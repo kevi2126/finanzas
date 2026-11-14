@@ -623,7 +623,7 @@ function parseSupa(raw){
   return {u,k:k||''};
 }
 const encKey=o=>'FR1.'+btoa(unescape(encodeURIComponent(JSON.stringify(o))));
-const decKey=s=>JSON.parse(decodeURIComponent(escape(atob(s.trim().replace(/^FR1\./,'')))));
+const decKey=s=>{const b=(s.split('FR1.').pop()||'').replace(/[^A-Za-z0-9+/=]/g,'');return JSON.parse(decodeURIComponent(escape(atob(b))))}; // ignora espacios/caracteres invisibles
 function newCode(){const a=new Uint8Array(24);crypto.getRandomValues(a);return [...a].map(x=>'abcdefghijkmnpqrstuvwxyz23456789'[x%32]).join('')}
 function vSync(){
   if(SC)return `<div class="card"><h2>☁️ Sincronización ${pill(SC.err?'bad':'good',SC.err?'Error':'Activa')}</h2>
