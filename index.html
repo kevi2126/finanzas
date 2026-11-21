@@ -305,12 +305,15 @@ function metaGanancia(){
   obs.sort((a,b)=>a.date.localeCompare(b.date));
   const bal={auto:Math.max(0,sobreBal('auto')),fijos:Math.max(0,sobreBal('fijos'))};
   obs.forEach(o=>{const u=Math.min(bal[o.s],o.a);bal[o.s]-=u;o.rest=o.a-u;o.days=daysBetween(t,o.date)});
-  const dW=avgWeekDiarios(),g=x=>x/(1-prop);
+  // con menos de 2 semanas de historial, usa también lo de la semana en curso
+  const prev=lastWeeks(4).filter(w=>w.ingreso>0),cur=weekData(weekKey(t)),pocos=prev.length<2;
+  const dW=pocos?Math.max(avgWeekDiarios(),cur.diarios):avgWeekDiarios(),g=x=>x/(1-prop);
   const sumW=sum(obs,o=>o.rest/(o.days<=0?1:Math.max(1,Math.ceil(o.days/7))));
   const minW=g(sumW+dW),minM=g(sum(obs.filter(o=>o.days<=30),o=>o.rest)+dW*30/7);
   let car=null;if(np){const dd=Math.max(1,daysBetween(t,np[1]));car={dd,date:np[1],need:g(sum(obs.filter(o=>o.date<=np[1]),o=>o.rest)+dW*dd/7)}}
   const ws=lastWeeks(4).filter(w=>w.dias>0),dias=ws.length>=2?Math.max(1,Math.round(sum(ws,w=>w.dias)/ws.length)):6;
-  return {obs,dW,prop,minW,minM,car,dias,f,ritmo:avgWeekIncome()};
+  const ritmo=pocos&&cur.dias?cur.ruta/cur.dias*dias+cur.extras:avgWeekIncome(); // proyección de la semana en curso
+  return {obs,dW,prop,minW,minM,car,dias,f,ritmo,estimado:pocos&&cur.dias>0};
 }
 function vMeta(wk){
   const M=metaGanancia();if(M.minW<=0&&M.minM<=0)return '';
@@ -319,15 +322,15 @@ function vMeta(wk){
   const porDia=M.minW/M.f/M.dias;
   return `<div class="card"><h2>🎯 Cuánto necesitas ganar ${pill(lw,lw==='good'?'✅ Cubierto':'⚠️ Te faltan '+fmt0(falta))}</h2>
    <div class="grid2">
-    <div class="tile"><div class="k">Esta semana (depósito ML)</div><div class="v">${fmt0(M.minW)}</div><div class="k">llevas ${fmt0(lleva)}</div><div class="bar"><i style="width:${Math.min(100,lleva/M.minW*100)}%;background:${lw==='good'?'var(--good)':'var(--inc)'}"></i></div></div>
+    <div class="tile"><div class="k">Meta de ingresos esta semana</div><div class="v">${fmt0(M.minW)}</div><div class="k">llevas ${fmt0(lleva)}${wk.extras?` (ML ${fmt0(wk.ruta)} + extras ${fmt0(wk.extras)})`:''}</div><div class="bar"><i style="width:${Math.min(100,lleva/M.minW*100)}%;background:${lw==='good'?'var(--good)':'var(--inc)'}"></i></div></div>
     <div class="tile"><div class="k">Ganancia por día (lo que ves en ML)</div><div class="v">${fmt0(porDia)}</div><div class="k">trabajando ${M.dias} días/semana${falta>0?` · faltan ${fmt0(falta/M.f/quedan)}/día los próximos ${quedan} días`:''}</div></div>
-    <div class="tile"><div class="k">Próximos 30 días</div><div class="v">${fmt0(M.minM)}</div><div class="k">a tu ritmo: ${M.ritmo?fmt0(ritmoM):'—'}</div>${pill(lm,!M.ritmo?'Sin datos':lm==='good'?'✅ Alcanzas':lm==='warn'?'⚠️ Justo':'⛔ No alcanzas')}</div>
+    <div class="tile"><div class="k">Próximos 30 días</div><div class="v">${fmt0(M.minM)}</div><div class="k">a tu ritmo${M.estimado?' (según esta semana)':''}: ${M.ritmo?fmt0(ritmoM):'—'}</div>${pill(lm,!M.ritmo?'Sin datos':lm==='good'?'✅ Alcanzas':lm==='warn'?'⚠️ Justo':'⛔ No alcanzas')}</div>
     ${M.car?`<div class="tile"><div class="k">Hasta tu pago del auto (${M.car.dd} días)</div><div class="v">${fmt0(M.car.need)}</div><div class="k">vence ${fdateS(M.car.date)}</div></div>`:''}
    </div>
    <details style="margin-top:8px"><summary class="muted">¿Cómo se calcula?</summary><div class="muted" style="margin-top:6px">
     ${M.obs.filter(o=>o.rest>0.5).map(o=>`<div class="row"><span>${esc(o.n)} · ${o.days<0?'vencido':fdateS(o.date)}</span><span>${fmt0(o.rest)}</span></div>`).join('')||'<div>Tus apartados ya cubren los pagos próximos ✅</div>'}
     <div class="row"><span>⛽🍔 Gasto diario promedio</span><span>${fmt0(M.dW)}/semana</span></div>
-    <div style="margin-top:6px">Ya resta lo que tienes en los apartados de mensualidad y pagos fijos, y suma ${(M.prop*100).toFixed(0)}% para mantenimiento/impuestos. Los montos son lo que te debe <b>depositar</b> ML (ya con IVA y retenciones); "por día" es la ganancia que ves en la app de ML antes de IVA.${M.dW?'':' Registra gasolina y comida para que la meta sea más exacta.'}</div></div></details>
+    <div style="margin-top:6px">Ya resta lo que tienes en los apartados de mensualidad y pagos fijos, y suma ${(M.prop*100).toFixed(0)}% para mantenimiento/impuestos. Las metas son ingresos totales: depósito de ML (ya con IVA y retenciones) + extras. "Por día" es la ganancia que ves en la app de ML antes de IVA.${M.estimado?' Con pocas semanas registradas, el ritmo se calcula con lo que llevas esta semana.':''}${M.dW?'':' Registra gasolina y comida para que la meta sea más exacta.'}</div></div></details>
    <div class="hint">Es el mínimo para no atrasarte. Lo que ganes de más va a emergencia y a bajar deudas.</div></div>`;
 }
 

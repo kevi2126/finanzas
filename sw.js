@@ -1,5 +1,5 @@
 ﻿// Service worker: permite usar la app sin internet una vez instalada.
-const CACHE = 'finanzas-ruta-v7';
+const CACHE = 'finanzas-ruta-v8';
 const FILES = ['./', './index.html', './schedule.js', './manifest.webmanifest',
   './icon-192.png', './icon-512.png', './icon-maskable.png', './apple-touch-icon.png'];
 
