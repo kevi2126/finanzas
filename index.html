@@ -134,7 +134,7 @@ const MAPS=['carPaid','billPaid','weekReal'];
 const seedDebts=[['bbva','BBVA Azul'],['rappi','RappiCard'],['nu','Nu'],['klar','Klar'],['stori','Stori'],['ml','Mercado Libre']]
   .map(([id,n])=>({id:'tdc-'+id,name:n,type:'tdc',saldo:0,limite:0,tasa:0,pagoMin:0,pagoNoInt:0,day:0}));
 const DEFAULTS={
-  settings:{ivaPct:16,retIvaPct:0,retIsrPct:0,weekStart:1,maintPct:8,maintGoal:10000,taxPct:0,
+  settings:{ivaPct:16,retIvaPct:8,retIsrPct:2.1,weekStart:1,maintPct:8,maintGoal:10000,taxPct:0,
             emergPct:10,emergMonths:3,emergMin:5000,abonoPct:50,remindDays:5,strategy:'avalancha',segCancelFrom:0},
   entries:[],   // {id,date,type:'ruta'|'extra'|'gasto'|'pago',cat,amount,km,paq,lts,note,from,card,debt}
   moves:[],     // {id,date,sobre,amount,note,ref}
@@ -155,6 +155,8 @@ function load(){let s=null;try{s=JSON.parse(localStorage.getItem(KEY))}catch(e){
   if(!o.seedTel){seedBills.forEach(b=>{if(!o.bills.some(x=>x.id===b.id)&&!o.del['bills:'+b.id])o.bills.push({...b})});o.seedTel=true}
   if(!o.seedTel2){ // corrige teléfonos: principal cada 15 días desde 3 dic; trabajo en pausa
     seedBills.forEach(sb=>{const b=o.bills.find(x=>x.id===sb.id);if(b){Object.assign(b,sb);o.meta['bills:'+b.id]=Date.now()}});o.seedTel2=true}
+  if(!o.seedRet){ // retenciones de ML (IVA 8%, ISR 2.1%) según el corte real
+    if(!+o.settings.retIvaPct&&!+o.settings.retIsrPct){o.settings.retIvaPct=8;o.settings.retIsrPct=2.1;o.meta.settings=Date.now()}o.seedRet=true}
   return o}
 let S=load();
 function save(){localStorage.setItem(KEY,JSON.stringify(S));scheduleSync()}
@@ -204,16 +206,17 @@ const pill=(l,t)=>`<span class="pill ${l}">${t||LBL[l]}</span>`;
 const worst=(...ls)=>ls.includes('bad')?'bad':ls.includes('warn')?'warn':'good';
 
 /* ================== CÁLCULOS ================== */
+const r2=n=>Math.round((n+Number.EPSILON)*100)/100;
 const payFactor=()=>1+(S.settings.ivaPct-S.settings.retIvaPct-S.settings.retIsrPct)/100;
 const entryValue=e=>e.type==='ruta'?e.amount*payFactor():e.amount;
 const sobreBal=k=>sum(S.moves.filter(m=>m.sobre===k),m=>m.amount);
 const isCashOut=e=>(e.type==='gasto'&&!e.card)||e.type==='pago';
 function weekData(wk){
   const end=addDays(wk,6),es=S.entries.filter(e=>e.date>=wk&&e.date<=end),rutas=es.filter(e=>e.type==='ruta');
-  const sub=sum(rutas,e=>e.amount),iva=sub*S.settings.ivaPct/100,ret=sub*(S.settings.retIvaPct+S.settings.retIsrPct)/100,esperado=sub+iva-ret;
+  const sub=r2(sum(rutas,e=>e.amount)),iva=r2(sub*S.settings.ivaPct/100),retIva=r2(sub*S.settings.retIvaPct/100),retIsr=r2(sub*S.settings.retIsrPct/100),ret=retIva+retIsr,esperado=r2(sub+iva-ret); // redondeo por línea, igual que el corte de ML
   const real=S.weekReal[wk],ruta=real!=null&&real!==''?+real:esperado;
   const extras=sum(es.filter(e=>e.type==='extra'),e=>e.amount);
-  return {wk,end,sub,iva,ret,esperado,real,ruta,extras,ingreso:ruta+extras,
+  return {wk,end,sub,iva,retIva,retIsr,ret,esperado,real,ruta,extras,ingreso:ruta+extras,
     gastos:sum(es.filter(e=>e.type==='gasto'),e=>e.amount),
     salidas:sum(es.filter(isCashOut),e=>e.amount),
     diarios:sum(es.filter(e=>e.type==='gasto'&&DIARIOS.includes(e.cat)&&!e.from&&!e.card),e=>e.amount),
@@ -290,6 +293,42 @@ function debtPlan(){
     let p=pay;bal.forEach(x=>{const m=Math.min(x.s,+x.d.pagoMin||0);x.s-=m;p-=m});
     ordenDeudas(bal.filter(x=>x.s>0.5).map(x=>({...x.d,saldo:x.s,_x:x}))).forEach(o=>{const y=Math.min(Math.max(0,p),o._x.s);o._x.s-=y;p-=y});meses++}}
   return {inc,car,bills,diarios,mant,imp,emerg,budget,mins,alloc,orden,meses,intTot,total:sum(act,d=>d.saldo),act,sobra:Math.max(0,budget-sum(Object.values(alloc)))};
+}
+
+/* ================== META DE GANANCIA ================== */
+// Cuánto necesitas que te deposite ML (con IVA y retenciones) para cubrir lo que vence + gasto diario + mantenimiento/impuestos
+function metaGanancia(){
+  const st=S.settings,t=today(),np=nextPay(),f=payFactor();
+  const prop=Math.min(0.5,(st.maintPct+st.ivaPct*st.taxPct/100)/100/f); // parte del depósito que va a mantenimiento/SAT
+  const obs=[];if(np)obs.push({n:`🚗 Mensualidad #${np[0]}`,a:payAmt(np),date:np[1],s:'auto'});
+  obligaciones(31).forEach(x=>obs.push({n:(x.kind==='debt'?'💳 ':'📌 ')+x.it.name+(x.kind==='debt'?' (mínimo)':''),a:x.amount,date:x.o.date,s:'fijos'}));
+  obs.sort((a,b)=>a.date.localeCompare(b.date));
+  const bal={auto:Math.max(0,sobreBal('auto')),fijos:Math.max(0,sobreBal('fijos'))};
+  obs.forEach(o=>{const u=Math.min(bal[o.s],o.a);bal[o.s]-=u;o.rest=o.a-u;o.days=daysBetween(t,o.date)});
+  const dW=avgWeekDiarios(),g=x=>x/(1-prop);
+  const sumW=sum(obs,o=>o.rest/(o.days<=0?1:Math.max(1,Math.ceil(o.days/7))));
+  const minW=g(sumW+dW),minM=g(sum(obs.filter(o=>o.days<=30),o=>o.rest)+dW*30/7);
+  let car=null;if(np){const dd=Math.max(1,daysBetween(t,np[1]));car={dd,date:np[1],need:g(sum(obs.filter(o=>o.date<=np[1]),o=>o.rest)+dW*dd/7)}}
+  const ws=lastWeeks(4).filter(w=>w.dias>0),dias=ws.length>=2?Math.max(1,Math.round(sum(ws,w=>w.dias)/ws.length)):6;
+  return {obs,dW,prop,minW,minM,car,dias,f,ritmo:avgWeekIncome()};
+}
+function vMeta(wk){
+  const M=metaGanancia();if(M.minW<=0&&M.minM<=0)return '';
+  const lleva=wk.ingreso,falta=Math.max(0,M.minW-lleva),hoyIdx=(new Date().getDay()-S.settings.weekStart+7)%7,quedan=Math.max(1,Math.min(M.dias,7-hoyIdx));
+  const lw=lvl(lleva/M.minW,1,0.6),ritmoM=M.ritmo*30/7,lm=M.ritmo?lvl(ritmoM/M.minM,1.1,0.95):'warn';
+  const porDia=M.minW/M.f/M.dias;
+  return `<div class="card"><h2>🎯 Cuánto necesitas ganar ${pill(lw,lw==='good'?'✅ Cubierto':'⚠️ Te faltan '+fmt0(falta))}</h2>
+   <div class="grid2">
+    <div class="tile"><div class="k">Esta semana (depósito ML)</div><div class="v">${fmt0(M.minW)}</div><div class="k">llevas ${fmt0(lleva)}</div><div class="bar"><i style="width:${Math.min(100,lleva/M.minW*100)}%;background:${lw==='good'?'var(--good)':'var(--inc)'}"></i></div></div>
+    <div class="tile"><div class="k">Ganancia por día (lo que ves en ML)</div><div class="v">${fmt0(porDia)}</div><div class="k">trabajando ${M.dias} días/semana${falta>0?` · faltan ${fmt0(falta/M.f/quedan)}/día los próximos ${quedan} días`:''}</div></div>
+    <div class="tile"><div class="k">Próximos 30 días</div><div class="v">${fmt0(M.minM)}</div><div class="k">a tu ritmo: ${M.ritmo?fmt0(ritmoM):'—'}</div>${pill(lm,!M.ritmo?'Sin datos':lm==='good'?'✅ Alcanzas':lm==='warn'?'⚠️ Justo':'⛔ No alcanzas')}</div>
+    ${M.car?`<div class="tile"><div class="k">Hasta tu pago del auto (${M.car.dd} días)</div><div class="v">${fmt0(M.car.need)}</div><div class="k">vence ${fdateS(M.car.date)}</div></div>`:''}
+   </div>
+   <details style="margin-top:8px"><summary class="muted">¿Cómo se calcula?</summary><div class="muted" style="margin-top:6px">
+    ${M.obs.filter(o=>o.rest>0.5).map(o=>`<div class="row"><span>${esc(o.n)} · ${o.days<0?'vencido':fdateS(o.date)}</span><span>${fmt0(o.rest)}</span></div>`).join('')||'<div>Tus apartados ya cubren los pagos próximos ✅</div>'}
+    <div class="row"><span>⛽🍔 Gasto diario promedio</span><span>${fmt0(M.dW)}/semana</span></div>
+    <div style="margin-top:6px">Ya resta lo que tienes en los apartados de mensualidad y pagos fijos, y suma ${(M.prop*100).toFixed(0)}% para mantenimiento/impuestos. Los montos son lo que te debe <b>depositar</b> ML (ya con IVA y retenciones); "por día" es la ganancia que ves en la app de ML antes de IVA.${M.dW?'':' Registra gasolina y comida para que la meta sea más exacta.'}</div></div></details>
+   <div class="hint">Es el mínimo para no atrasarte. Lo que ganes de más va a emergencia y a bajar deudas.</div></div>`;
 }
 
 /* ================== SALUD FINANCIERA ================== */
@@ -387,7 +426,9 @@ function vInicio(){
     <div class="tile"><div class="k">Pago esperado con IVA</div><div class="v pos">${fmt0(wk.esperado)}</div></div>
     <div class="tile"><div class="k">Extras</div><div class="v">${fmt0(wk.extras)}</div></div>
     <div class="tile"><div class="k">Gastos</div><div class="v neg">${fmt0(wk.gastos)}</div></div></div>
-    <div class="muted" style="margin-top:8px">${wk.dias} días trabajados${wk.km?` · ${wk.km} km · ${fmt(wk.sub/wk.km)}/km`:''}${wk.dias?` · promedio ${fmt0(wk.sub/wk.dias)}/día`:''}</div></div>`;
+    ${wk.sub?`<div class="muted" style="margin-top:8px">Ganancia ${fmt(wk.sub)} + IVA ${fmt(wk.iva)} − ret. IVA ${fmt(wk.retIva)} − ret. ISR ${fmt(wk.retIsr)} = <b style="color:var(--t1)">${fmt(wk.esperado)}</b></div>`:''}
+    <div class="muted" style="margin-top:4px">${wk.dias} días trabajados${wk.km?` · ${wk.km} km · ${fmt(wk.sub/wk.km)}/km`:''}${wk.dias?` · promedio ${fmt0(wk.sub/wk.dias)}/día`:''}</div></div>`;
+  h+=vMeta(wk);
   h+=`<div class="card"><h2>🗓️ ${MESES[new Date().getMonth()].toUpperCase()} — balance del mes</h2><div class="grid2">
     <div class="tile"><div class="k">Ingresos</div><div class="v pos">${fmt0(md.ing)}</div></div>
     <div class="tile"><div class="k">Gastos (consumo)</div><div class="v neg">${fmt0(md.gastos)}</div></div>
